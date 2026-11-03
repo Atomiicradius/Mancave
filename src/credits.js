@@ -15,6 +15,27 @@ export const CREDITS = [
     license: '', // TODO: licence
     note: 'Modified: textures re-encoded, tonearm and record split out so they can move.',
   },
+  {
+    name: 'Chessboard and pieces (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced, textures re-encoded.',
+  },
+  {
+    name: 'Desk, monitor and PC (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced, textures re-encoded.',
+  },
+  {
+    name: 'Console table (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: texture re-encoded.',
+  },
   { name: 'three.js', by: 'mrdoob and contributors', url: 'https://threejs.org', license: 'MIT' },
   { name: 'chess.js', by: 'Jeff Hlywa', url: 'https://github.com/jhlywa/chess.js', license: 'BSD-2-Clause' },
   {

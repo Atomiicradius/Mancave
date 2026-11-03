@@ -23,8 +23,9 @@ export function buildChess() {
   const g = new THREE.Group();
   g.name = 'chess';
 
-  addBox(g, { name: 'counter', size: [0.6, 0.95, 2.0], pos: [3.7, 0.475, 0], color: 0x8a1c2b, solid: true });
-  const board = addBox(g, { name: 'chessboard', size: [0.5, 0.04, 0.5], pos: [3.7, 0.97, 0], color: 0xffffff });
+  // Placeholder cabinet + board; sized like the real models (see assets.js) because the collider comes from here.
+  addBox(g, { name: 'counter', size: [0.5, 1.1, 0.95], pos: [3.75, 0.55, 0], color: 0x8a1c2b, solid: true });
+  const board = addBox(g, { name: 'chessboard', size: [0.44, 0.04, 0.44], pos: [3.75, 1.12, 0], color: 0xffffff });
   board.material.map = checkerTexture();
   board.userData.interactable = 'chess';
   return g;

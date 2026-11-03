@@ -15,6 +15,7 @@ export function buildComputer() {
     new THREE.PlaneGeometry(0.82, 0.42),
     new THREE.MeshStandardMaterial({ color: 0x001018, emissive: 0x00c8ff, emissiveIntensity: 0.8 })
   );
+  screen.name = 'monitor-screen';
   screen.position.set(0, 1.25, -2.774);
   screen.userData.interactable = 'computer';
   g.add(screen);
@@ -36,4 +37,16 @@ export function registerComputer(interaction) {
       }, 900);
     },
   });
+
+  return {
+    // The model's monitor is switched off; give its screen the cyan glow the placeholder had so it reads as clickable.
+    attach(model) {
+      // three.js strips dots from node names, so the glTF node "monitor_Material.002_0" is "monitor_Material002_0" here.
+      let screen = null;
+      model.traverse((o) => o.isMesh && /^monitor_Material.?002/.test(o.name) && (screen = o));
+      if (!screen) return;
+      screen.material = screen.material.clone(); // don't touch materials shared with other parts
+      Object.assign(screen.material, { map: null, emissiveMap: null, color: new THREE.Color(0x001018), emissive: new THREE.Color(0x00c8ff), emissiveIntensity: 0.9 });
+    },
+  };
 }

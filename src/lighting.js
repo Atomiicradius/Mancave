@@ -20,17 +20,6 @@ function pointLight(parent, color, intensity, distance, pos) {
   return l;
 }
 
-// Small warm bulb + light. Warm = "this is clickable", against the cool neon palette.
-function warmAccent(parent, pos, intensity, distance) {
-  const bulb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.05, 12, 8),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffa860).multiplyScalar(2.5) })
-  );
-  bulb.position.set(...pos);
-  parent.add(bulb);
-  pointLight(parent, 0xffa860, intensity, distance, pos);
-}
-
 export function buildLighting({ neonLights = 4 } = {}) {
   const g = new THREE.Group();
   g.name = 'lighting';
@@ -67,9 +56,9 @@ export function buildLighting({ neonLights = 4 } = {}) {
   g.add(spot, spot.target);
 
   // --- Small warm accents on the interactables: desk lamp, turntable console, chess board.
-  warmAccent(g, [0.85, 1.05, -2.55], 3, 3);
+  pointLight(g, 0xffa860, 2.5, 3.5, [0.7, 1.75, -1.9]); // desk glow (no visible bulb; kept above the desk so the white top doesn't blow out)
   pointLight(g, 0xffa860, 2, 2.5, [-3.4, 1.15, -0.8]); // glow over the turntable console (no visible bulb)
-  warmAccent(g, [3.45, 1.45, 0], 2.5, 2.5);
+  pointLight(g, 0xffa860, 2, 2.5, [3.2, 1.55, 0]); // glow over the chess table (no visible bulb)
 
   // --- Warm spotlight on the album wall so covers stay readable under the neon.
   const albumLight = new THREE.SpotLight(0xffc890, 14, 6, 0.42, 0.7, 2);

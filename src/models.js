@@ -22,6 +22,13 @@ function fit(model, { size, pos, rotY = 0 }) {
   model.position.set(pos[0] - c.x, pos[1] - box.min.y, pos[2] - c.z);
 }
 
+// With no `match`, every mesh in the model is clickable; otherwise only meshes whose own or ancestor node name matches.
+function isClickable(mesh, root, match) {
+  if (!match) return true;
+  for (let n = mesh; n && n !== root; n = n.parent) if (match.test(n.name)) return true;
+  return false;
+}
+
 // Placeholder meshes stay in the scene (their colliders are separate) but stop rendering and being hit by rays.
 function retire(scene, names) {
   for (const n of names) {
@@ -54,7 +61,7 @@ export async function applyModels(scene, { onProgress = () => {}, hooks = {} } =
         model.name = `model-${key}`;
         model.traverse((o) => {
           if (!o.isMesh) return;
-          if (entry.interactable) o.userData.interactable = entry.interactable;
+          if (entry.interactable && isClickable(o, model, entry.interactableMatch)) o.userData.interactable = entry.interactable;
           if (o.material?.map) o.material.map.anisotropy = 4;
         });
         retire(scene, entry.hide ?? []);

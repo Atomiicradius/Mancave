@@ -1,2 +1,6 @@
 node_modules
 dist
+
+# Huge original model files; the optimized copies in public/models/ are what ships. Keep these locally.
+source-models/classic_chessboard.glb
+source-models/computer.glb

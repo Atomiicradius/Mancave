@@ -43,7 +43,7 @@ if (QUALITY.touch) player.controls.onTap = (x, y) => interaction.tapAt(x, y);
 
 const vinyl = registerVinyl(interaction);
 registerChess(interaction);
-registerComputer(interaction);
+const computer = registerComputer(interaction);
 
 // --- Loading screen: bar tracks model downloads; "enter" unlocks once models are in and shaders are compiled.
 const overlay = document.getElementById('overlay');
@@ -55,7 +55,10 @@ const setProgress = (p) => {
 };
 
 (async () => {
-  await applyModels(scene, { hooks: { turntable: vinyl.attachTurntable }, onProgress: (p) => setProgress(p * 0.9) });
+  await applyModels(scene, {
+    hooks: { turntable: vinyl.attachTurntable, computer: computer.attach },
+    onProgress: (p) => setProgress(p * 0.9),
+  });
   setProgress(0.95);
   try {
     await renderer.compileAsync(scene, camera); // compile shaders now, not on the first frame the player sees
@@ -66,6 +69,12 @@ const setProgress = (p) => {
   overlay.classList.remove('loading');
   startMsg.textContent = QUALITY.touch ? 'Tap to enter' : 'Click to enter';
   if (QUALITY.touch) document.getElementById('help').textContent = 'Left thumb: move · Right thumb: look · Tap objects to use them';
+  if (params.has('debug')) {
+    // Which meshes are clickable, by interactable id (checks that model tagging matched the right parts).
+    const tally = {};
+    scene.traverse((o) => o.isMesh && o.userData.interactable && (tally[o.userData.interactable] = (tally[o.userData.interactable] ?? 0) + 1));
+    console.info('[garage] interactable meshes', JSON.stringify(tally));
+  }
   console.info(`[garage] quality=${QUALITY.low ? 'low' : 'high'} touch=${QUALITY.touch} scene triangles=${countTriangles(scene)} (budget 150000)`);
 })();
 

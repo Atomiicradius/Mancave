@@ -33,6 +33,29 @@ export const ASSETS = {
       hide: ['turntable-placeholder', 'platter-placeholder'],
       interactable: 'turntable',
     },
+    // Source files are far too heavy for the web, so these are optimized copies (originals in source-models/):
+    //   scripts/optimize-scene-glb.mjs <in> <out> [--tex N] [--ratio R --ratio-min N] [--big N --big-target N]
+    cabinet: {
+      // Cabinet the chessboard sits on, against the right wall. Its front is +z in the model, so -PI/2 turns it to face -x (the room).
+      file: url('models/cabinet.glb'),
+      fit: { size: [0.5, 1.1, 0.95], pos: [3.75, 0, 0], rotY: -Math.PI / 2 },
+      hide: ['counter'],
+    },
+    chessboard: {
+      // Sits on the cabinet top (~1.086 m after the cabinet fit). Clicking it opens the chess overlay.
+      file: url('models/chessboard.glb'),
+      fit: { size: [0.4, 0.2, 0.4], pos: [3.75, 1.086, 0], rotY: Math.PI / 2 }, // rotY: white starts on the model's -z side; +PI/2 puts it on the player's side (-x)
+      hide: ['chessboard'],
+      interactable: 'chess',
+    },
+    computer: {
+      // Desk + monitor + keyboard + PC on the back wall. Only the monitor and keyboard are clickable (opens the portfolio).
+      file: url('models/computer.glb'),
+      fit: { size: [1.9, 1.45, 0.8], pos: [0, 0, -2.6], rotY: -Math.PI / 2 }, // the monitor faces +z (the room) with -PI/2; +PI/2 would face the wall
+      hide: ['desk', 'monitor', 'monitor-screen', 'monitor-stand'],
+      interactable: 'computer',
+      interactableMatch: /^(monitor|keyboard|keys)/i, // node/mesh names inside the model
+    },
   },
   textures: {},
 };
