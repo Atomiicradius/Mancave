@@ -12,7 +12,7 @@ or a sub-path (e.g. `https://you.github.io/garage/`). Tested both ways with `vit
       credit shown; not for anything commercial. Stockfish is **GPL-3.0** (source link is in the credits panel).
 
 ## Options
-**GitHub Pages** — push to a GitHub repo's `main` (or `master`); `.github/workflows/deploy.yml` builds and publishes.
+**GitHub Pages** — run `.github/workflows/deploy.yml` from the repo's Actions tab (manual trigger for now; add a `push:` trigger to auto-publish).
 Enable once: Settings -> Pages -> Source: GitHub Actions.
 
 **Netlify / Vercel** — import the repo; build command `npm run build`, output directory `dist`. No other config needed.
