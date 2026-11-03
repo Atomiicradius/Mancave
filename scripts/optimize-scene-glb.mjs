@@ -23,7 +23,7 @@ const RATIO_MIN = opt('ratio-min', 1000);
 const BIG = opt('big', Infinity);
 const BIG_TARGET = opt('big-target', 1500);
 const ERROR = opt('error', 0.05); // error budget (relative) for --ratio meshes; raise it if the target count isn't reached
-const BIG_ERROR = opt('big-error', 0.5); // the huge parts need a loose error budget or the target count is never reached
+const BIG_ERROR = opt('big-error', 1); // error budget for the huge parts (sloppy simplifier)
 
 await MeshoptSimplifier.ready;
 const io = new NodeIO()
@@ -70,18 +70,25 @@ for (const prim of root.listMeshes().flatMap((m) => m.listPrimitives())) {
     if (nor) { attrs[o++] = nor[i * 3]; attrs[o++] = nor[i * 3 + 1]; attrs[o++] = nor[i * 3 + 2]; }
   }
   const weights = [...(uv ? [1, 1] : []), ...(nor ? [0.5, 0.5, 0.5] : [])];
-  const [out] = MeshoptSimplifier.simplifyWithAttributes(
-    Uint32Array.from(indices.getArray()),
-    new Float32Array(pos),
-    3,
-    attrs,
-    stride,
-    weights,
-    null,
-    target * 3,
-    tris > BIG ? BIG_ERROR : ERROR, // relative error budget; the target count is what usually decides
-    tris > BIG ? ['Prune'] : [] // for the huge parts, also drop tiny disconnected pieces (screws, bevel fragments)
-  );
+  let out;
+  if (tris > BIG) {
+    // Dense/messy parts (e.g. a 500k-triangle mouse): the attribute-aware simplifier stalls, and its 'Prune' flag deleted the
+    // whole body once, so use the sloppy simplifier, which always reaches the target count.
+    [out] = MeshoptSimplifier.simplifySloppy(Uint32Array.from(indices.getArray()), new Float32Array(pos), 3, null, target * 3, BIG_ERROR);
+  } else {
+    [out] = MeshoptSimplifier.simplifyWithAttributes(
+      Uint32Array.from(indices.getArray()),
+      new Float32Array(pos),
+      3,
+      attrs,
+      stride,
+      weights,
+      null,
+      target * 3,
+      ERROR, // relative error budget; the target count is what usually decides
+      []
+    );
+  }
   indices.setArray(out);
   compactPrimitive(prim);
 }
