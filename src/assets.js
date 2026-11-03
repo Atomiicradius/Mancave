@@ -42,7 +42,7 @@ export const ASSETS = {
       // Animated LED "blade" sign: a panel on bracket arms that projects from a wall plate (the plate is the model's +x end),
       // so it goes on the right wall between the chess table and the back corner. The panel faces +z, toward the spawn view.
       file: url('models/neon-sign-animated.glb'),
-      fit: { size: [1.2, 1.5, 0.25], pos: [3.455, 1.1, -1.75], rotY: 0 }, // x = 4 - half its fitted length: plate flush with the wall
+      fit: { size: [1.2, 1.5, 0.25], pos: [3.59, 1.1, -1.75], rotY: 0 }, // x = 4 - half its fitted length (~0.82 m after shortening the arms): plate flush with the wall
       collider: true, // it projects into the room at head height, so it blocks walking like a solid prop
     },
     lampChess: {
