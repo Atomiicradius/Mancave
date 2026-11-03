@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garage</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05030a; font-family: system-ui, sans-serif; }
+    canvas { display: block; }
+    #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      border-radius: 50%; background: #fff; opacity: .8; pointer-events: none; mix-blend-mode: difference; }
+    #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; color: #e8dcff; background: rgba(5,3,10,.7); cursor: pointer; text-align: center; }
+    #overlay h1 { margin: 0; letter-spacing: .2em; text-transform: uppercase; color: #ff4fd8; text-shadow: 0 0 12px #ff4fd8; }
+    #overlay p { margin: 0; opacity: .8; }
+    #prompt { position: fixed; left: 50%; top: calc(50% + 28px); transform: translateX(-50%); display: none; padding: 4px 10px;
+      color: #fff; background: rgba(20,10,40,.75); border: 1px solid #ff4fd8; border-radius: 4px; font-size: 14px; pointer-events: none; }
+    #toast { position: fixed; left: 50%; bottom: 10%; transform: translateX(-50%); opacity: 0; transition: opacity .25s;
+      padding: 8px 16px; color: #fff; background: rgba(20,10,40,.85); border: 1px solid #00e5ff; border-radius: 4px; pointer-events: none; }
+    #nowplaying { position: fixed; left: 16px; bottom: 16px; display: none; padding: 6px 12px; color: #fff;
+      background: rgba(20,10,40,.8); border-left: 3px solid #ff8a2a; font-size: 14px; pointer-events: none; }
+    #chess { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(5,3,10,.85); color: #e8dcff; }
+    #chess .panel { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    #chess .bar { display: flex; gap: 8px; align-items: center; }
+    #chess button, #chess select { background: #1c1230; color: #e8dcff; border: 1px solid #9b5cff; border-radius: 4px; padding: 5px 10px; font: inherit; cursor: pointer; }
+    #chess .board { display: grid; grid-template: repeat(8, minmax(0, 1fr)) / repeat(8, minmax(0, 1fr)); width: min(88vw, 70vh, 480px); height: min(88vw, 70vh, 480px); border: 2px solid #ff4fd8; box-shadow: 0 0 24px #ff4fd855; }
+    #chess .sq { position: relative; display: flex; align-items: center; justify-content: center; font-size: min(8vw, 6vh, 44px); line-height: 1; overflow: hidden; user-select: none; cursor: pointer; }
+    #chess .sq.l { background: #d9cfee; }
+    #chess .sq.d { background: #5b3f8a; }
+    #chess .sq.last { box-shadow: inset 0 0 0 100px rgba(255,200,60,.45); }
+    #chess .sq.sel { box-shadow: inset 0 0 0 100px rgba(0,229,255,.5); }
+    #chess .sq.move::after { content: ''; position: absolute; width: 28%; height: 28%; border-radius: 50%; background: rgba(0,229,255,.75); }
+    #chess .sq.move.cap::after { width: 86%; height: 86%; background: none; border: 4px solid rgba(255,79,216,.85); box-sizing: border-box; }
+    #chess .w { color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000, 0 0 2px #000; }
+    #chess .b { color: #14091f; text-shadow: 0 0 1px #fff; }
+    #chess .status { min-height: 1.4em; }
+  </style>
+</head>
+<body>
+  <div id="crosshair"></div>
+  <div id="prompt"></div>
+  <div id="toast"></div>
+  <div id="nowplaying"></div>
+  <div id="chess"></div>
+  <div id="overlay">
+    <h1>Garage</h1>
+    <p>Click to enter</p>
+    <p>WASD move · Mouse look · Esc release</p>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

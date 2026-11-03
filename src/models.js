@@ -1,0 +1,60 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { ASSETS } from './assets.js';
+
+const loader = new GLTFLoader();
+const draco = new DRACOLoader();
+draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+loader.setDRACOLoader(draco);
+
+// Scales `model` uniformly to fit inside `size`, then puts its bottom-center at `pos` (y rotation first).
+function fit(model, { size, pos, rotY = 0 }) {
+  model.rotation.y = rotY;
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  const dim = box.getSize(new THREE.Vector3());
+  const s = Math.min(size[0] / dim.x, size[1] / dim.y, size[2] / dim.z);
+  model.scale.setScalar(s);
+  model.updateMatrixWorld(true);
+  box.setFromObject(model);
+  const c = box.getCenter(new THREE.Vector3());
+  model.position.set(pos[0] - c.x, pos[1] - box.min.y, pos[2] - c.z);
+}
+
+// Placeholder meshes stay in the scene (their colliders are separate) but stop rendering and being hit by rays.
+function retire(scene, names) {
+  for (const n of names) {
+    const m = scene.getObjectByName(n);
+    if (!m) continue;
+    m.visible = false;
+    m.raycast = () => {};
+  }
+}
+
+// Loads every manifest entry that has a file and swaps it in for its placeholder.
+// Entries without a file (or that fail to load) keep their placeholder. `onProgress(done, total)` per entry.
+export async function applyModels(scene, onProgress = () => {}) {
+  const entries = Object.entries(ASSETS.models).filter(([, e]) => e.file);
+  let done = 0;
+  await Promise.all(
+    entries.map(async ([key, entry]) => {
+      try {
+        const gltf = await loader.loadAsync(entry.file);
+        const model = gltf.scene;
+        fit(model, entry.fit);
+        model.name = `model-${key}`;
+        model.traverse((o) => {
+          if (!o.isMesh) return;
+          if (entry.interactable) o.userData.interactable = entry.interactable;
+          if (o.material?.map) o.material.map.anisotropy = 4;
+        });
+        retire(scene, entry.hide ?? []);
+        scene.add(model);
+      } catch (err) {
+        console.warn(`Model "${key}" failed to load; keeping placeholder.`, err);
+      }
+      onProgress(++done, entries.length);
+    })
+  );
+}
