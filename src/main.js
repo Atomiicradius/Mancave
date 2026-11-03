@@ -49,7 +49,8 @@ const vinyl = registerVinyl(interaction);
 registerChess(interaction);
 const computer = registerComputer(interaction);
 const decor = createDecor();
-const carSwap = createCarSwap({ scene, interaction, bay: car.userData.bay, ui: carConsole });
+player.setGround(car.userData.bay.groundAt); // the platform is walkable (8 cm step)
+const carSwap = createCarSwap({ scene, camera, interaction, bay: car.userData.bay, ui: carConsole });
 
 // --- Loading screen: bar tracks model downloads; "enter" unlocks once models are in and shaders are compiled.
 const overlay = document.getElementById('overlay');

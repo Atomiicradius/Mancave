@@ -299,7 +299,7 @@ function buildFloorGlow(parent) {
 }
 
 // The car bay: raised platform (two sliding halves over a pit), ceiling hatch + shaft, floor glow.
-// The returned group has `userData.bay = { setFloor(drop, slide), setCeiling(slide) }`. The cars themselves are added by
+// The returned group has `userData.bay = { setFloor(drop, slide), setCeiling(slide), groundAt(x, z) }`. The cars themselves are added by
 // interactables/carswap.js; this only keeps an invisible collider where the car stands.
 export function buildCar({ reflectionScale = PLATFORM.reflectionScale } = {}) {
   const g = new THREE.Group();
@@ -311,7 +311,9 @@ export function buildCar({ reflectionScale = PLATFORM.reflectionScale } = {}) {
   buildFloorGlow(g);
   setFloor(0, 0);
   setCeiling(0);
-  g.userData.bay = { setFloor, setCeiling };
+  // Floor height at (x, z): the platform top over its footprint (it is only ever open during a swap, when the area is blocked).
+  const groundAt = (x, z) => (Math.abs(x) <= PLATFORM.w / 2 && Math.abs(z) <= PLATFORM.d / 2 ? PLATFORM.h : 0);
+  g.userData.bay = { setFloor, setCeiling, groundAt };
 
   const collider = addBox(g, { name: 'car-collider', size: [4.4, 0.6, 1.9], pos: [0, 0.5, 0], solid: true });
   collider.visible = false;

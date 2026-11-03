@@ -7,6 +7,7 @@ const EYE_HEIGHT = 1.65;
 const RADIUS = 0.3;
 const SPEED = 3.2;
 const SPRINT = 1.8;
+const STEP_RATE = 14; // per second: how quickly the eye height eases up/down a step (a quick climb, not a snap)
 
 const keys = new Set();
 
@@ -29,11 +30,17 @@ export function createPlayer(camera, domElement, { touch = false } = {}) {
   addEventListener('keyup', (e) => keys.delete(e.code));
   addEventListener('blur', () => keys.clear());
 
+  let ground = () => 0; // (x, z) -> floor height under the player; set with setGround()
+  let eyeLift = 0;
   const fwd = new THREE.Vector3();
   const right = new THREE.Vector3();
 
   function update(dt) {
     if (!controls.isLocked) return;
+
+    // Follow the floor height (e.g. the car platform is 8 cm up): the eyes ease up when you step onto it.
+    eyeLift += (ground(camera.position.x, camera.position.z) - eyeLift) * Math.min(1, dt * STEP_RATE);
+    camera.position.y = EYE_HEIGHT + eyeLift;
 
     // Keyboard is full-strength; the touch joystick (controls.move) is analog.
     const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) + (controls.move?.y ?? 0);
@@ -56,5 +63,11 @@ export function createPlayer(camera, domElement, { touch = false } = {}) {
     if (!blocked(p.x, p.z + move.z)) p.z += move.z;
   }
 
-  return { controls, update };
+  return {
+    controls,
+    update,
+    setGround(fn) {
+      ground = fn;
+    },
+  };
 }

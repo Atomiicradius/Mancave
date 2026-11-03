@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CARS, CAR_FIT } from '../cars.js';
-import { ROOM, getColliders } from '../room.js';
+import { ROOM, BAY, getColliders } from '../room.js';
 import { QUALITY } from '../quality.js';
 import { fit, loadGLTF } from '../models.js';
 import { PLATFORM, makeBoxCar, tuneCar, disposeCar } from './car.js';
@@ -216,7 +216,7 @@ export function buildCarConsole() {
 
 // ---- The swap controller -------------------------------------------------------------------------------------------
 // bay: { setFloor, setCeiling } from buildCar(); ui: from buildCarConsole().
-export function createCarSwap({ scene, interaction, bay, ui }) {
+export function createCarSwap({ scene, camera, interaction, bay, ui }) {
   const n = CARS.length;
   const cache = new Map(); // index -> Promise<slot>
   const ready = new Set(); // indices whose model has finished loading
@@ -225,6 +225,18 @@ export function createCarSwap({ scene, interaction, bay, ui }) {
   let busy = false;
   let anim = null;
   let cardShown = false;
+
+  // The platform opens into a pit, so nobody may be on it when a swap starts, and while it runs the area is a solid block.
+  const PLAYER_R = 0.3;
+  const onPlatform = () =>
+    Math.abs(camera.position.x) < BAY.floor.w / 2 + PLAYER_R && Math.abs(camera.position.z) < BAY.floor.d / 2 + PLAYER_R;
+  const platformBlock = { minX: -BAY.floor.w / 2, maxX: BAY.floor.w / 2, minZ: -BAY.floor.d / 2, maxZ: BAY.floor.d / 2 };
+  const blockPlatform = (on) => {
+    const list = getColliders();
+    const i = list.indexOf(platformBlock);
+    if (on && i < 0) list.push(platformBlock);
+    if (!on && i >= 0) list.splice(i, 1);
+  };
 
   const card = document.getElementById('carcard');
   const loadEl = document.getElementById('carload');
@@ -346,6 +358,7 @@ export function createCarSwap({ scene, interaction, bay, ui }) {
   }
 
   function begin(idx, next, freeze = null) {
+    blockPlatform(true);
     next.visible = true;
     anim = { old: current, next, idx, t: 0, freeze, last: performance.now() };
     frame(freeze ?? 0);
@@ -364,6 +377,7 @@ export function createCarSwap({ scene, interaction, bay, ui }) {
     current = next;
     cur = idx;
     anim = null;
+    blockPlatform(false);
     busy = false;
     ui.setBusy(false);
     ui.setCar(CARS[cur], cur, n);
@@ -375,6 +389,7 @@ export function createCarSwap({ scene, interaction, bay, ui }) {
   async function request(dir) {
     if (n < 2) return interaction.toast('No other cars yet');
     if (busy) return interaction.toast('Swap in progress…', 1200);
+    if (onPlatform()) return interaction.toast('Step off the platform first', 1800);
     busy = true;
     ui.setBusy(true);
     syncNav();
@@ -383,6 +398,13 @@ export function createCarSwap({ scene, interaction, bay, ui }) {
     if (!ready.has(idx)) setLoading(true, CARS[idx].name);
     const next = await promise;
     setLoading(false);
+    if (onPlatform()) {
+      // walked onto the platform while the next car was loading
+      busy = false;
+      ui.setBusy(false);
+      syncNav();
+      return interaction.toast('Step off the platform first', 1800);
+    }
     begin(idx, next);
   }
 
