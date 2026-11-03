@@ -66,12 +66,25 @@ function glossyFloor(w, d, renderScale) {
   return floor;
 }
 
+// Low-tier floor: no second scene render; glossy PBR material that picks up the scene's environment map instead.
+function cheapFloor(w, d) {
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, d),
+    new THREE.MeshStandardMaterial({ color: 0x1b1824, roughness: 0.25, metalness: 0.6 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = 0.001;
+  floor.name = 'floor-glossy';
+  return floor;
+}
+
+// reflectionScale: planar reflection render scale (0 = use the cheap floor).
 export function buildRoom({ reflectionScale = 0.6 } = {}) {
   const room = new THREE.Group();
   const { w, d, h, wall: t } = ROOM;
 
   addBox(room, { name: 'floor', size: [w, 0.1, d], pos: [0, -0.05, 0], color: 0x0c0a12 });
-  room.add(glossyFloor(w, d, reflectionScale));
+  room.add(reflectionScale > 0 ? glossyFloor(w, d, reflectionScale) : cheapFloor(w, d));
   addBox(room, { name: 'ceiling', size: [w, 0.1, d], pos: [0, h + 0.05, 0], color: 0x15121c });
 
   // Walls sit just outside the interior volume so the interior is exactly w x d.

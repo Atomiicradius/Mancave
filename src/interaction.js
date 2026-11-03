@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { QUALITY } from './quality.js';
 
 const REACH = 3;
 const HIGHLIGHT = new THREE.Color(0xffb060);
@@ -31,25 +32,25 @@ export function createInteraction({ scene, camera, controls }) {
       saved = { color: mesh.material.emissive.clone(), intensity: mesh.material.emissiveIntensity };
       mesh.material.emissive.copy(HIGHLIGHT);
       mesh.material.emissiveIntensity = 0.7;
-      promptEl.textContent = `[E] ${handlers.get(mesh.userData.interactable).label(mesh)}`;
+      promptEl.textContent = `${QUALITY.touch ? 'Tap' : '[E]'} ${handlers.get(mesh.userData.interactable).label(mesh)}`;
       promptEl.style.display = 'block';
     } else {
       promptEl.style.display = 'none';
     }
   }
 
-  function pick() {
-    raycaster.setFromCamera(center, camera);
+  function pick(point = center) {
+    raycaster.setFromCamera(point, camera);
     // Cast against everything so walls/props occlude objects behind them.
     const hit = raycaster.intersectObjects(scene.children, true).find((h) => h.object.isMesh);
     const id = hit?.object.userData.interactable;
     return id && handlers.has(id) ? hit.object : null;
   }
 
-  function interact() {
-    if (!controls.isLocked || !hovered) return;
-    active = handlers.get(hovered.userData.interactable);
-    active.onInteract(hovered);
+  function interact(mesh = hovered) {
+    if (!controls.isLocked || !mesh) return;
+    active = handlers.get(mesh.userData.interactable);
+    active.onInteract(mesh);
   }
 
   function exit() {
@@ -81,6 +82,12 @@ export function createInteraction({ scene, camera, controls }) {
     },
     register(id, handler) {
       handlers.set(id, handler);
+    },
+    // Touch: interact with whatever is under the tapped screen point (within reach), not just the crosshair.
+    tapAt(px, py) {
+      if (!controls.isLocked) return;
+      const target = pick(new THREE.Vector2((px / innerWidth) * 2 - 1, -(py / innerHeight) * 2 + 1));
+      if (target) interact(target);
     },
     toast(text, ms = 2000) {
       toastEl.textContent = text;

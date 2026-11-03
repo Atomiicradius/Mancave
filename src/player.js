@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { getColliders } from './room.js';
+import { createTouchControls } from './touch.js';
 
 const EYE_HEIGHT = 1.65;
 const RADIUS = 0.3;
@@ -20,8 +21,8 @@ function blocked(x, z) {
   return getColliders().some((b) => circleHitsBox(x, z, b));
 }
 
-export function createPlayer(camera, domElement) {
-  const controls = new PointerLockControls(camera, domElement);
+export function createPlayer(camera, domElement, { touch = false } = {}) {
+  const controls = touch ? createTouchControls(camera) : new PointerLockControls(camera, domElement);
   camera.position.set(0, EYE_HEIGHT, 2);
 
   addEventListener('keydown', (e) => keys.add(e.code));
@@ -34,9 +35,11 @@ export function createPlayer(camera, domElement) {
   function update(dt) {
     if (!controls.isLocked) return;
 
-    const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
-    const r = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
-    if (!f && !r) return;
+    // Keyboard is full-strength; the touch joystick (controls.move) is analog.
+    const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) + (controls.move?.y ?? 0);
+    const r = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + (controls.move?.x ?? 0);
+    const strength = Math.min(1, Math.hypot(f, r));
+    if (strength < 0.05) return;
 
     // Horizontal basis from camera yaw only.
     camera.getWorldDirection(fwd);
@@ -45,7 +48,7 @@ export function createPlayer(camera, domElement) {
     right.crossVectors(fwd, camera.up).normalize();
 
     const move = new THREE.Vector3().addScaledVector(fwd, f).addScaledVector(right, r);
-    move.normalize().multiplyScalar(SPEED * (keys.has('ShiftLeft') ? SPRINT : 1) * dt);
+    move.normalize().multiplyScalar(SPEED * strength * (keys.has('ShiftLeft') ? SPRINT : 1) * dt);
 
     // Resolve axes separately so the player slides along walls.
     const p = camera.position;

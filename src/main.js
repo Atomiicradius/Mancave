@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { QUALITY } from './quality.js';
 import { buildRoom } from './room.js';
 import { buildLighting } from './lighting.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -11,9 +12,13 @@ import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const params = new URLSearchParams(location.search);
+
+// The post-processing target does its own MSAA, so the canvas itself needs no antialiasing.
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(QUALITY.pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
+renderer.info.autoReset = false; // accumulate stats across the composer/reflector passes (reset once per frame)
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -22,26 +27,50 @@ scene.background = new THREE.Color(0x05030a);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 50);
 scene.add(camera);
 
-scene.add(buildRoom(), buildCar(), buildVinylWall(), buildChess(), buildComputer());
+scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), buildCar(), buildVinylWall(), buildChess(), buildComputer());
 
-scene.add(buildLighting());
+scene.add(buildLighting({ neonLights: QUALITY.neonLights }));
 // Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.25;
-const post = createPost(renderer, scene, camera);
+const post = createPost(renderer, scene, camera, { samples: QUALITY.msaaSamples });
 post.setSize(innerWidth, innerHeight);
 
-const player = createPlayer(camera, renderer.domElement);
+const player = createPlayer(camera, renderer.domElement, { touch: QUALITY.touch });
 const interaction = createInteraction({ scene, camera, controls: player.controls });
+if (QUALITY.touch) player.controls.onTap = (x, y) => interaction.tapAt(x, y);
 
 const vinyl = registerVinyl(interaction);
-// async; placeholders show until each model arrives
-applyModels(scene, { hooks: { turntable: vinyl.attachTurntable } });
 registerChess(interaction);
 registerComputer(interaction);
 
+// --- Loading screen: bar tracks model downloads; "enter" unlocks once models are in and shaders are compiled.
 const overlay = document.getElementById('overlay');
-overlay.addEventListener('click', () => player.controls.lock());
+const loadBar = overlay.querySelector('#loadbar i');
+const startMsg = document.getElementById('startmsg');
+const setProgress = (p) => {
+  loadBar.style.width = `${Math.round(p * 100)}%`;
+  startMsg.textContent = `Loading… ${Math.round(p * 100)}%`;
+};
+
+(async () => {
+  await applyModels(scene, { hooks: { turntable: vinyl.attachTurntable }, onProgress: (p) => setProgress(p * 0.9) });
+  setProgress(0.95);
+  try {
+    await renderer.compileAsync(scene, camera); // compile shaders now, not on the first frame the player sees
+  } catch {
+    /* first render compiles lazily instead */
+  }
+  setProgress(1);
+  overlay.classList.remove('loading');
+  startMsg.textContent = QUALITY.touch ? 'Tap to enter' : 'Click to enter';
+  if (QUALITY.touch) document.getElementById('help').textContent = 'Left thumb: move · Right thumb: look · Tap objects to use them';
+  console.info(`[garage] quality=${QUALITY.low ? 'low' : 'high'} touch=${QUALITY.touch} scene triangles=${countTriangles(scene)} (budget 150000)`);
+})();
+
+overlay.addEventListener('click', () => {
+  if (!overlay.classList.contains('loading')) player.controls.lock();
+});
 player.controls.addEventListener('lock', () => (overlay.style.display = 'none'));
 player.controls.addEventListener('unlock', () => {
   if (!interaction.holdsPointer()) overlay.style.display = 'flex';
@@ -54,18 +83,47 @@ addEventListener('resize', () => {
   post.setSize(innerWidth, innerHeight);
 });
 
-const clock = new THREE.Clock();
-renderer.setAnimationLoop(() => {
-  const dt = Math.min(clock.getDelta(), 0.05);
+// Triangles in the visible scene (one pass; the floor reflection renders it a second time).
+function countTriangles(root) {
+  let n = 0;
+  root.traverseVisible((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry;
+    n += (g.index ? g.index.count : g.attributes.position.count) / 3;
+  });
+  return Math.round(n);
+}
+
+// `?fps` shows a small stats readout (fps, triangles actually drawn per frame, draw calls) for performance checks.
+let fpsEl = null;
+let frames = 0;
+let fpsSince = performance.now();
+if (params.has('fps')) {
+  fpsEl = Object.assign(document.createElement('div'), { id: 'fps' });
+  document.body.appendChild(fpsEl);
+}
+
+const timer = new THREE.Timer();
+renderer.setAnimationLoop((now) => {
+  timer.update(now);
+  const dt = Math.min(timer.getDelta(), 0.05);
   interaction.update();
   vinyl.update(dt);
   player.update(dt);
+  renderer.info.reset();
   post.render();
+
+  if (fpsEl && ++frames && performance.now() - fpsSince > 500) {
+    const { calls, triangles } = renderer.info.render;
+    fpsEl.textContent = `${Math.round((frames * 1000) / (performance.now() - fpsSince))} fps\n${(triangles / 1000).toFixed(0)}k tris drawn\n${calls} calls\n${QUALITY.low ? 'low' : 'high'}`;
+    frames = 0;
+    fpsSince = performance.now();
+  }
 });
 
 // Test hooks for headless checks. `?cam=x,y,z,tx,ty,tz` places the camera and hides the start overlay.
-window.__garage = { camera, player, scene };
-const cam = new URLSearchParams(location.search).get('cam');
+window.__garage = { camera, player, scene, renderer, stats: () => ({ triangles: countTriangles(scene) }) };
+const cam = params.get('cam');
 if (cam) {
   const [x, y, z, tx, ty, tz] = cam.split(',').map(Number);
   camera.position.set(x, y, z);

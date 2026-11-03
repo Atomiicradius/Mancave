@@ -2,11 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Garage</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; background: #05030a; font-family: system-ui, sans-serif; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05030a; font-family: system-ui, sans-serif;
+      touch-action: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
     canvas { display: block; }
+    #loadbar { width: min(60vw, 320px); height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+    #loadbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #00e5ff, #ff4fd8); box-shadow: 0 0 10px #ff4fd8; transition: width .2s; }
+    #overlay.loading { cursor: progress; }
+    #overlay.loading #help { display: none; }
+    #overlay:not(.loading) #loadbar { display: none; }
+    #overlay p { padding: 0 24px; }
+    #joy { position: fixed; display: none; width: 112px; height: 112px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35);
+      background: rgba(255,255,255,.07); pointer-events: none; }
+    #joyKnob { position: absolute; left: 31px; top: 31px; width: 50px; height: 50px; border-radius: 50%;
+      background: rgba(255,79,216,.55); box-shadow: 0 0 12px #ff4fd8; }
+    #menuBtn { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: none; width: 44px; height: 44px;
+      border-radius: 8px; border: 1px solid #9b5cff; background: rgba(20,10,40,.7); color: #e8dcff; font-size: 20px; }
+    #fps { position: fixed; left: 8px; top: 8px; padding: 3px 6px; font: 11px monospace; color: #9f9; background: rgba(0,0,0,.6); pointer-events: none; white-space: pre; }
     #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
       border-radius: 50%; background: #fff; opacity: .8; pointer-events: none; mix-blend-mode: difference; }
     #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -42,10 +56,11 @@
   <div id="toast"></div>
   <div id="nowplaying"></div>
   <div id="chess"></div>
-  <div id="overlay">
+  <div id="overlay" class="loading">
     <h1>Garage</h1>
-    <p>Click to enter</p>
-    <p>WASD move · Mouse look · Esc release</p>
+    <div id="loadbar"><i></i></div>
+    <p id="startmsg">Loading… 0%</p>
+    <p id="help">WASD move · Mouse look · Esc release</p>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

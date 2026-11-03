@@ -33,15 +33,22 @@ function retire(scene, names) {
 }
 
 // Loads every manifest entry that has a file and swaps it in for its placeholder.
-// Entries without a file (or that fail to load) keep their placeholder. `onProgress(done, total)` per entry.
+// Entries without a file (or that fail to load) keep their placeholder. `onProgress(fraction 0..1)` across all entries.
 // `hooks[key](model)` runs after a model is fitted and added, for per-model setup (e.g. splitting out moving parts).
 export async function applyModels(scene, { onProgress = () => {}, hooks = {} } = {}) {
   const entries = Object.entries(ASSETS.models).filter(([, e]) => e.file);
-  let done = 0;
+  const fractions = entries.map(() => 0);
+  const report = () => onProgress(fractions.reduce((a, b) => a + b, 0) / Math.max(1, entries.length));
+  report();
   await Promise.all(
-    entries.map(async ([key, entry]) => {
+    entries.map(async ([key, entry], i) => {
       try {
-        const gltf = await loader.loadAsync(entry.file);
+        // Download progress counts for 90%; fitting/splitting/adding the model is the rest.
+        const gltf = await loader.loadAsync(entry.file, (e) => {
+          if (!e.lengthComputable) return;
+          fractions[i] = (e.loaded / e.total) * 0.9;
+          report();
+        });
         const model = gltf.scene;
         fit(model, entry.fit);
         model.name = `model-${key}`;
@@ -56,7 +63,8 @@ export async function applyModels(scene, { onProgress = () => {}, hooks = {} } =
       } catch (err) {
         console.warn(`Model "${key}" failed to load; keeping placeholder.`, err);
       }
-      onProgress(++done, entries.length);
+      fractions[i] = 1;
+      report();
     })
   );
 }

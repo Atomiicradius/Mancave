@@ -31,7 +31,7 @@ function warmAccent(parent, pos, intensity, distance) {
   pointLight(parent, 0xffa860, intensity, distance, pos);
 }
 
-export function buildLighting() {
+export function buildLighting({ neonLights = 4 } = {}) {
   const g = new THREE.Group();
   g.name = 'lighting';
   const { w, d, h } = ROOM;
@@ -50,10 +50,15 @@ export function buildLighting() {
 
   // --- Cool fill: a handful of colored point lights near the strips (no shadows, cheap).
   g.add(new THREE.HemisphereLight(0x5a3d99, 0x0a0612, 0.6));
-  pointLight(g, NEON.magenta, 7, 0, [-2.6, 2.5, -2.0]);
-  pointLight(g, NEON.cyan, 7, 0, [2.6, 2.5, 2.0]);
-  pointLight(g, NEON.purple, 7, 0, [2.6, 2.5, -2.0]);
-  pointLight(g, NEON.cyan, 5, 0, [-2.6, 2.5, 2.0]);
+  // Low tier keeps the first two (diagonal corners) and boosts them to compensate.
+  const fill = [
+    [NEON.magenta, 7, [-2.6, 2.5, -2.0]],
+    [NEON.cyan, 7, [2.6, 2.5, 2.0]],
+    [NEON.purple, 7, [2.6, 2.5, -2.0]],
+    [NEON.cyan, 5, [-2.6, 2.5, 2.0]],
+  ];
+  const boost = neonLights < fill.length ? 1.5 : 1;
+  fill.slice(0, neonLights).forEach(([color, intensity, pos]) => pointLight(g, color, intensity * boost, 0, pos));
 
   // --- ONE warm hero light on the car.
   const spot = new THREE.SpotLight(0xffb070, 28, 9, 0.5, 0.6, 2);
