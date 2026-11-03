@@ -14,6 +14,13 @@
     #overlay.loading #help { display: none; }
     #overlay:not(.loading) #loadbar { display: none; }
     #overlay p { padding: 0 24px; }
+    #credits-link, #credits-close { margin-top: 10px; background: none; border: 0; color: #e8dcff; opacity: .6; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+    #credits { position: absolute; inset: 0; overflow: auto; padding: 28px 22px; box-sizing: border-box; background: rgba(5,3,10,.96); text-align: left; cursor: default; }
+    #credits[hidden] { display: none; }
+    #credits h2 { margin: 0 0 12px; color: #ff4fd8; }
+    #credits ul { margin: 0 0 10px; padding-left: 18px; line-height: 1.5; font-size: 14px; }
+    #credits a { color: #00e5ff; }
+    #credits small { opacity: .7; }
     #joy { position: fixed; display: none; width: 112px; height: 112px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35);
       background: rgba(255,255,255,.07); pointer-events: none; }
     #joyKnob { position: absolute; left: 31px; top: 31px; width: 50px; height: 50px; border-radius: 50%;
@@ -61,6 +68,8 @@
     <div id="loadbar"><i></i></div>
     <p id="startmsg">Loading… 0%</p>
     <p id="help">WASD move · Mouse look · Esc release</p>
+    <button type="button" id="credits-link">Credits &amp; licences</button>
+    <div id="credits" hidden></div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

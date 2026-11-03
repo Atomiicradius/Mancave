@@ -4,6 +4,7 @@ import { buildRoom } from './room.js';
 import { buildLighting } from './lighting.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createPost } from './post.js';
+import { renderCredits } from './credits.js';
 import { applyModels } from './models.js';
 import { createPlayer } from './player.js';
 import { createInteraction } from './interaction.js';
@@ -70,6 +71,18 @@ const setProgress = (p) => {
 
 overlay.addEventListener('click', () => {
   if (!overlay.classList.contains('loading')) player.controls.lock();
+});
+
+// Credits panel on the start screen; clicks inside it must not start the game.
+const creditsEl = document.getElementById('credits');
+renderCredits(creditsEl);
+document.getElementById('credits-link').addEventListener('click', (e) => {
+  e.stopPropagation();
+  creditsEl.hidden = false;
+});
+creditsEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (e.target.id === 'credits-close') creditsEl.hidden = true;
 });
 player.controls.addEventListener('lock', () => (overlay.style.display = 'none'));
 player.controls.addEventListener('unlock', () => {
