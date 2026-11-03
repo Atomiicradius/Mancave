@@ -27,6 +27,18 @@
       background: rgba(255,79,216,.55); box-shadow: 0 0 12px #ff4fd8; }
     #menuBtn { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: none; width: 44px; height: 44px;
       border-radius: 8px; border: 1px solid #9b5cff; background: rgba(20,10,40,.7); color: #e8dcff; font-size: 20px; }
+    #carcard { position: fixed; right: 16px; bottom: 16px; max-width: min(320px, calc(100vw - 32px)); padding: 10px 14px; color: #fff; background: rgba(20,10,40,.82);
+      border-left: 3px solid #00e5ff; border-radius: 4px; opacity: 0; transform: translateY(8px); transition: opacity .6s, transform .6s; pointer-events: none; }
+    #carcard.show { opacity: 1; transform: none; }
+    #carcard b { font-size: 16px; } #carcard span { margin-left: 8px; opacity: .7; } #carcard p { margin: 4px 0 0; font-size: 13px; opacity: .85; }
+    #carload { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); display: none; align-items: center; gap: 10px; padding: 8px 14px; color: #fff;
+      background: rgba(20,10,40,.85); border: 1px solid #ff4fd8; border-radius: 4px; pointer-events: none; }
+    #carload.show { display: flex; }
+    #carload::before { content: ''; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.25); border-top-color: #00e5ff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #carnav { position: fixed; right: max(12px, env(safe-area-inset-right)); top: 42%; display: none; flex-direction: column; gap: 10px; }
+    #carnav button { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #9b5cff; background: rgba(20,10,40,.7); color: #e8dcff; font-size: 26px; line-height: 1; }
+    #carnav.busy button { opacity: .35; }
     #fps { position: fixed; left: 8px; top: 8px; padding: 3px 6px; font: 11px monospace; color: #9f9; background: rgba(0,0,0,.6); pointer-events: none; white-space: pre; }
     #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
       border-radius: 50%; background: #fff; opacity: .8; pointer-events: none; mix-blend-mode: difference; }
@@ -62,6 +74,8 @@
   <div id="prompt"></div>
   <div id="toast"></div>
   <div id="nowplaying"></div>
+  <div id="carcard"><b id="carname"></b><span id="caryear"></span><p id="cardesc"></p></div>
+  <div id="carload"></div>
   <div id="chess"></div>
   <div id="overlay" class="loading">
     <h1>Garage</h1>

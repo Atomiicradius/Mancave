@@ -41,7 +41,7 @@ export function createTouchControls(camera) {
   let origin = null; // joystick center
   let look = null; // { x, y, t, moved }
 
-  const overUI = (e) => e.target.closest?.('#overlay, #chess, #menuBtn');
+  const overUI = (e) => e.target.closest?.('#overlay, #chess, #menuBtn, #carnav');
 
   addEventListener(
     'touchstart',

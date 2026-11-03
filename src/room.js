@@ -4,6 +4,13 @@ import { Reflector } from 'three/addons/objects/Reflector.js';
 // Room dimensions in meters. Centered on x/z origin, floor at y=0.
 export const ROOM = { w: 8, d: 6, h: 3, wall: 0.2 };
 
+// The car bay: two openings centered on the origin. The floor one (the platform's footprint) is the pit the next car rises from;
+// the ceiling one lets the old car leave. Hatch panels slide into the slab around each opening (see interactables/car.js).
+export const BAY = {
+  floor: { w: 5.2, d: 2.6, pit: 1.7, slab: 0.2 }, // pit = depth below the floor; slab = floor thickness (the platform halves hide inside it)
+  ceil: { w: 4.8, d: 2.3, shaft: 2.1 }, // shaft = height of the dark void above the ceiling
+};
+
 const colliders = []; // XZ-plane AABBs: { minX, maxX, minZ, maxZ }
 
 export function getColliders() {
@@ -53,8 +60,36 @@ function brickTexture() {
 }
 
 // Dark glossy floor: a planar reflection (so neon strips and the car mirror in it), tinted dark.
+// Flat rectangle with a rectangular hole (the pit opening), in the XY plane like PlaneGeometry.
+function rectWithHole(w, d, hole) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, -d / 2);
+  shape.lineTo(w / 2, -d / 2);
+  shape.lineTo(w / 2, d / 2);
+  shape.lineTo(-w / 2, d / 2);
+  shape.closePath();
+  const cut = new THREE.Path();
+  cut.moveTo(-hole.w / 2, -hole.d / 2);
+  cut.lineTo(-hole.w / 2, hole.d / 2);
+  cut.lineTo(hole.w / 2, hole.d / 2);
+  cut.lineTo(hole.w / 2, -hole.d / 2);
+  cut.closePath();
+  shape.holes.push(cut);
+  return new THREE.ShapeGeometry(shape);
+}
+
+// Four slabs around a rectangular opening (so hatch panels can slide into the slab and a car can pass through the hole).
+function slabsAround(room, name, y, thickness, color, hole) {
+  const { w, d } = ROOM;
+  const hw = hole.w / 2, hd = hole.d / 2;
+  addBox(room, { name: `${name}-left`, size: [w / 2 - hw, thickness, d], pos: [-(hw + w / 2) / 2, y, 0], color });
+  addBox(room, { name: `${name}-right`, size: [w / 2 - hw, thickness, d], pos: [(hw + w / 2) / 2, y, 0], color });
+  addBox(room, { name: `${name}-front`, size: [hole.w, thickness, d / 2 - hd], pos: [0, y, (hd + d / 2) / 2], color });
+  addBox(room, { name: `${name}-back`, size: [hole.w, thickness, d / 2 - hd], pos: [0, y, -(hd + d / 2) / 2], color });
+}
+
 function glossyFloor(w, d, renderScale) {
-  const floor = new Reflector(new THREE.PlaneGeometry(w, d), {
+  const floor = new Reflector(rectWithHole(w, d, BAY.floor), {
     color: 0x3a3548,
     textureWidth: Math.round(1024 * renderScale),
     textureHeight: Math.round(768 * renderScale),
@@ -69,7 +104,7 @@ function glossyFloor(w, d, renderScale) {
 // Low-tier floor: no second scene render; glossy PBR material that picks up the scene's environment map instead.
 function cheapFloor(w, d) {
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, d),
+    rectWithHole(w, d, BAY.floor),
     new THREE.MeshStandardMaterial({ color: 0x1b1824, roughness: 0.25, metalness: 0.6 })
   );
   floor.rotation.x = -Math.PI / 2;
@@ -83,9 +118,9 @@ export function buildRoom({ reflectionScale = 0.6 } = {}) {
   const room = new THREE.Group();
   const { w, d, h, wall: t } = ROOM;
 
-  addBox(room, { name: 'floor', size: [w, 0.1, d], pos: [0, -0.05, 0], color: 0x0c0a12 });
+  slabsAround(room, 'floor', -BAY.floor.slab / 2, BAY.floor.slab, 0x0c0a12, BAY.floor);
   room.add(reflectionScale > 0 ? glossyFloor(w, d, reflectionScale) : cheapFloor(w, d));
-  addBox(room, { name: 'ceiling', size: [w, 0.1, d], pos: [0, h + 0.05, 0], color: 0x15121c });
+  slabsAround(room, 'ceiling', h + 0.05, 0.1, 0x15121c, BAY.ceil);
 
   // Walls sit just outside the interior volume so the interior is exactly w x d.
   const bricks = brickTexture();

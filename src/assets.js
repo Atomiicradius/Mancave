@@ -20,11 +20,7 @@ export const ASSETS = {
   //   (car models usually need rotY so the nose points along +x or -x).
   // `hide`: placeholder mesh names to retire. `interactable`: tags the model's meshes for the click system.
   models: {
-    car: {
-      file: url('models/nsx.glb'), // optimized from source-models/2017_honda_nsx.glb via scripts/optimize-glb.mjs
-      fit: { size: [4.4, 1.2, 1.9], pos: [0, 0.08, 0], rotY: Math.PI / 2 }, // y = platform height (PLATFORM.h in car.js)  // model's long axis is z; flip to -Math.PI / 2 if the nose points the wrong way
-      hide: ['car-body', 'car-cabin'],
-    },
+    // (The car is not here: cars are swappable and live in src/cars.js.)
     turntable: {
       // Pioneer-style turntable with its dust cover; optimized from source-models/vinyl_player_pioneer.glb.
       // Sits on the wooden console (top at y = 0.7). rotY: the model's front faces +z, so +PI/2 turns it to face +x (the room).

@@ -8,7 +8,8 @@ import { renderCredits } from './credits.js';
 import { applyModels } from './models.js';
 import { createPlayer } from './player.js';
 import { createInteraction } from './interaction.js';
-import { buildCar, tuneCar } from './interactables/car.js';
+import { buildCar } from './interactables/car.js';
+import { buildCarConsole, createCarSwap } from './interactables/carswap.js';
 import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
@@ -28,7 +29,9 @@ scene.background = new THREE.Color(0x05030a);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 50);
 scene.add(camera);
 
-scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), buildCar({ reflectionScale: QUALITY.reflectionScale > 0 ? undefined : 0 }), buildVinylWall(), buildChess(), buildComputer());
+const car = buildCar({ reflectionScale: QUALITY.reflectionScale > 0 ? undefined : 0 });
+const carConsole = buildCarConsole();
+scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), car, carConsole.group, buildVinylWall(), buildChess(), buildComputer());
 
 scene.add(buildLighting({ neonLights: QUALITY.neonLights }));
 // Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
@@ -44,6 +47,7 @@ if (QUALITY.touch) player.controls.onTap = (x, y) => interaction.tapAt(x, y);
 const vinyl = registerVinyl(interaction);
 registerChess(interaction);
 const computer = registerComputer(interaction);
+const carSwap = createCarSwap({ scene, interaction, bay: car.userData.bay, ui: carConsole });
 
 // --- Loading screen: bar tracks model downloads; "enter" unlocks once models are in and shaders are compiled.
 const overlay = document.getElementById('overlay');
@@ -55,10 +59,13 @@ const setProgress = (p) => {
 };
 
 (async () => {
-  await applyModels(scene, {
-    hooks: { turntable: vinyl.attachTurntable, computer: computer.attach, car: tuneCar },
-    onProgress: (p) => setProgress(p * 0.9),
-  });
+  // The room's models and the first car load in parallel; the bar is a weighted mix of both.
+  let pModels = 0, pCar = 0;
+  const mix = () => setProgress((pModels * 0.35 + pCar * 0.55));
+  await Promise.all([
+    applyModels(scene, { hooks: { turntable: vinyl.attachTurntable, computer: computer.attach }, onProgress: (p) => { pModels = p; mix(); } }),
+    carSwap.init((p) => { pCar = p; mix(); }),
+  ]);
   setProgress(0.95);
   try {
     await renderer.compileAsync(scene, camera); // compile shaders now, not on the first frame the player sees
@@ -75,6 +82,8 @@ const setProgress = (p) => {
     scene.traverse((o) => o.isMesh && o.userData.interactable && (tally[o.userData.interactable] = (tally[o.userData.interactable] ?? 0) + 1));
     console.info('[garage] interactable meshes', JSON.stringify(tally));
   }
+  // `?swapAt=2.2` starts a car swap and freezes it at that many seconds, for screenshots.
+  if (params.has('swapAt')) carSwap.debugSwapAt(Number(params.get('swapAt')));
   console.info(`[garage] quality=${QUALITY.low ? 'low' : 'high'} touch=${QUALITY.touch} scene triangles=${countTriangles(scene)} (budget 150000)`);
 })();
 
@@ -131,6 +140,7 @@ renderer.setAnimationLoop((now) => {
   const dt = Math.min(timer.getDelta(), 0.05);
   interaction.update();
   vinyl.update(dt);
+  carSwap.update(dt);
   player.update(dt);
   renderer.info.reset();
   post.render();
@@ -144,7 +154,7 @@ renderer.setAnimationLoop((now) => {
 });
 
 // Test hooks for headless checks. `?cam=x,y,z,tx,ty,tz` places the camera and hides the start overlay.
-window.__garage = { camera, player, scene, renderer, stats: () => ({ triangles: countTriangles(scene) }) };
+window.__garage = { camera, player, scene, renderer, carSwap, stats: () => ({ triangles: countTriangles(scene) }) };
 const cam = params.get('cam');
 if (cam) {
   const [x, y, z, tx, ty, tz] = cam.split(',').map(Number);

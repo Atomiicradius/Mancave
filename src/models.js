@@ -9,7 +9,7 @@ draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
 loader.setDRACOLoader(draco);
 
 // Scales `model` uniformly to fit inside `size`, then puts its bottom-center at `pos` (y rotation first).
-function fit(model, { size, pos, rotY = 0 }) {
+export function fit(model, { size, pos, rotY = 0 }) {
   model.rotation.y = rotY;
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model);
@@ -21,6 +21,9 @@ function fit(model, { size, pos, rotY = 0 }) {
   const c = box.getCenter(new THREE.Vector3());
   model.position.set(pos[0] - c.x, pos[1] - box.min.y, pos[2] - c.z);
 }
+
+// Loads a .glb through the shared Draco-enabled loader (used for the swappable cars too).
+export const loadGLTF = (url, onProgress) => loader.loadAsync(url, onProgress);
 
 // With no `match`, every mesh in the model is clickable; otherwise only meshes whose own or ancestor node name matches.
 function isClickable(mesh, root, match) {

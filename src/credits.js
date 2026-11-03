@@ -1,13 +1,14 @@
 // Shown in the "Credits" panel on the start screen (attribution has to be visible on the live site, not just in CREDITS.md).
 // Keep in sync with CREDITS.md. `by`/`url` left empty shows "credit pending" so an unfinished entry is obvious.
+import { CARS } from './cars.js';
+
 export const CREDITS = [
-  {
-    name: '2017 Honda NSX (3D model)',
-    by: 'Ddiaz Design',
-    url: 'https://sketchfab.com/3d-models/2017-honda-nsx-e9411dfa29f745d6a69021d8ce19d2e7',
-    license: 'CC BY-NC-SA 4.0',
-    note: 'Modified: reduced polygon count, re-encoded textures, compressed. Shared under the same licence.',
-  },
+  // One entry per car in src/cars.js that has a model file (credit comes from the car's own `credit`).
+  ...CARS.filter((car) => car.file).map((car) =>
+    car.credit
+      ? { name: `${car.credit.title} (3D model)`, by: car.credit.by, url: car.credit.url, license: car.credit.license, note: car.credit.note }
+      : { name: `${car.name} (3D model)`, by: '', url: '', license: '', note: 'Credit missing: fill in `credit` in src/cars.js.' }
+  ),
   {
     name: 'Turntable (3D model)',
     by: '', // TODO: author
