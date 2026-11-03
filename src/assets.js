@@ -2,11 +2,18 @@
 const url = (p) => `${import.meta.env.BASE_URL}${p}`;
 
 export const ASSETS = {
-  // Placeholder synthesized loops (scripts/gen-audio.mjs); swap for real tracks.
-  tracks: Array.from({ length: 10 }, (_, i) => ({
-    title: `Placeholder Track ${i + 1}`,
-    file: url(`audio/track-${String(i + 1).padStart(2, '0')}.wav`),
-  })),
+  // One entry per album on the wall (6). `name` ties together public/covers/<name>.jpg and public/audio/<name>.mp3.
+  // The .wav is the synthesized placeholder loop (scripts/gen-audio.mjs); audio tries each file in order.
+  // A missing cover falls back to a generated gradient.
+  tracks: Array.from({ length: 6 }, (_, i) => {
+    const name = `track-${String(i + 1).padStart(2, '0')}`;
+    return {
+      name,
+      title: `Placeholder Track ${i + 1}`,
+      cover: url(`covers/${name}.jpg`),
+      audio: [url(`audio/${name}.mp3`), url(`audio/${name}.wav`)],
+    };
+  }),
   stockfish: url('stockfish/stockfish-19-lite-single.js'),
   // Set `file` to a .glb under public/models/ to replace the placeholder; null keeps the box placeholder.
   // `fit`: the model is scaled uniformly to fit `size` (x,y,z meters), bottom-centered at `pos`, rotated by `rotY` first
@@ -19,15 +26,12 @@ export const ASSETS = {
       hide: ['car-body', 'car-cabin'],
     },
     turntable: {
-      file: null, // e.g. url('models/turntable.glb')
-      fit: { size: [0.45, 0.25, 0.55], pos: [-3.7, 0.9, 1.9], rotY: 0 },
-      hide: ['turntable', 'platter'],
+      // Pioneer-style turntable with its dust cover; optimized from source-models/vinyl_player_pioneer.glb.
+      // Sits on the wooden console (top at y = 0.7). rotY: the model's front faces +z, so +PI/2 turns it to face +x (the room).
+      file: url('models/turntable.glb'),
+      fit: { size: [0.4, 0.46, 0.52], pos: [-3.8, 0.7, -1.0], rotY: Math.PI / 2 },
+      hide: ['turntable-placeholder', 'platter-placeholder'],
       interactable: 'turntable',
-    },
-    shelf: {
-      file: null, // e.g. url('models/shelf.glb'); vinyl records are positioned on its front face (x = -3.59)
-      fit: { size: [0.4, 2.0, 2.4], pos: [-3.8, 0, -0.8], rotY: 0 },
-      hide: ['shelf'],
     },
   },
   textures: {},

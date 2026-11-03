@@ -34,7 +34,8 @@ function retire(scene, names) {
 
 // Loads every manifest entry that has a file and swaps it in for its placeholder.
 // Entries without a file (or that fail to load) keep their placeholder. `onProgress(done, total)` per entry.
-export async function applyModels(scene, onProgress = () => {}) {
+// `hooks[key](model)` runs after a model is fitted and added, for per-model setup (e.g. splitting out moving parts).
+export async function applyModels(scene, { onProgress = () => {}, hooks = {} } = {}) {
   const entries = Object.entries(ASSETS.models).filter(([, e]) => e.file);
   let done = 0;
   await Promise.all(
@@ -51,6 +52,7 @@ export async function applyModels(scene, onProgress = () => {}) {
         });
         retire(scene, entry.hide ?? []);
         scene.add(model);
+        hooks[key]?.(model);
       } catch (err) {
         console.warn(`Model "${key}" failed to load; keeping placeholder.`, err);
       }

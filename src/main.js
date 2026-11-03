@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildRoom } from './room.js';
 import { buildLighting } from './lighting.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createPost } from './post.js';
 import { applyModels } from './models.js';
 import { createPlayer } from './player.js';
@@ -23,8 +24,10 @@ scene.add(camera);
 
 scene.add(buildRoom(), buildCar(), buildVinylWall(), buildChess(), buildComputer());
 
-applyModels(scene); // async; placeholders show until each model arrives
 scene.add(buildLighting());
+// Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.25;
 const post = createPost(renderer, scene, camera);
 post.setSize(innerWidth, innerHeight);
 
@@ -32,6 +35,8 @@ const player = createPlayer(camera, renderer.domElement);
 const interaction = createInteraction({ scene, camera, controls: player.controls });
 
 const vinyl = registerVinyl(interaction);
+// async; placeholders show until each model arrives
+applyModels(scene, { hooks: { turntable: vinyl.attachTurntable } });
 registerChess(interaction);
 registerComputer(interaction);
 

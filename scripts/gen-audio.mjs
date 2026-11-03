@@ -1,10 +1,10 @@
-// Generates 10 short looping placeholder tracks into public/audio/ (royalty-free: synthesized here).
+// Generates 6 short looping placeholder tracks into public/audio/ (royalty-free: synthesized here).
 // Replace them with real tracks and update src/assets.js.
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const RATE = 11025;
 const SECONDS = 8;
-const roots = [110, 123.47, 130.81, 146.83, 164.81, 98, 116.54, 138.59, 155.56, 174.61];
+const roots = [110, 123.47, 130.81, 146.83, 164.81, 98];
 const minor = [0, 3, 7, 10, 12, 15, 19];
 
 mkdirSync('public/audio', { recursive: true });

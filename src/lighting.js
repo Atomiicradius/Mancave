@@ -56,15 +56,21 @@ export function buildLighting() {
   pointLight(g, NEON.cyan, 5, 0, [-2.6, 2.5, 2.0]);
 
   // --- ONE warm hero light on the car.
-  const spot = new THREE.SpotLight(0xffb070, 45, 9, 0.5, 0.6, 2);
+  const spot = new THREE.SpotLight(0xffb070, 28, 9, 0.5, 0.6, 2);
   spot.position.set(0.4, 2.9, 1.6);
   spot.target.position.set(0, 0.5, 0);
   g.add(spot, spot.target);
 
-  // --- Small warm accents on the interactables: desk lamp, turntable, chess board.
+  // --- Small warm accents on the interactables: desk lamp, turntable console, chess board.
   warmAccent(g, [0.85, 1.05, -2.55], 3, 3);
-  warmAccent(g, [-3.45, 1.3, 1.9], 2.5, 2.5);
+  pointLight(g, 0xffa860, 2, 2.5, [-3.4, 1.15, -0.8]); // glow over the turntable console (no visible bulb)
   warmAccent(g, [3.45, 1.45, 0], 2.5, 2.5);
+
+  // --- Warm spotlight on the album wall so covers stay readable under the neon.
+  const albumLight = new THREE.SpotLight(0xffc890, 14, 6, 0.42, 0.7, 2);
+  albumLight.position.set(-2.3, 2.7, -0.8);
+  albumLight.target.position.set(-4, 1.75, -0.8);
+  g.add(albumLight, albumLight.target);
 
   return g;
 }

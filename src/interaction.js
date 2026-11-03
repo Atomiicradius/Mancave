@@ -4,7 +4,7 @@ const REACH = 3;
 const HIGHLIGHT = new THREE.Color(0xffb060);
 
 // Shared hover/click system. Interactables are meshes tagged with userData.interactable = '<id>'.
-// Each id gets a handler: { label(mesh) -> string, onInteract(mesh), onExit?() }.
+// Each id gets a handler: { label(mesh) -> string, onInteract(mesh), onHover?(mesh, isOver), onExit?() }.
 export function createInteraction({ scene, camera, controls }) {
   const handlers = new Map();
   const raycaster = new THREE.Raycaster(undefined, undefined, 0.05, REACH);
@@ -23,9 +23,11 @@ export function createInteraction({ scene, camera, controls }) {
     if (hovered) {
       hovered.material.emissive.copy(saved.color);
       hovered.material.emissiveIntensity = saved.intensity;
+      handlers.get(hovered.userData.interactable).onHover?.(hovered, false);
     }
     hovered = mesh;
     if (mesh) {
+      handlers.get(mesh.userData.interactable).onHover?.(mesh, true);
       saved = { color: mesh.material.emissive.clone(), intensity: mesh.material.emissiveIntensity };
       mesh.material.emissive.copy(HIGHLIGHT);
       mesh.material.emissiveIntensity = 0.7;
