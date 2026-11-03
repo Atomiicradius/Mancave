@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { QUALITY } from './quality.js';
-import { buildRoom } from './room.js';
+import { buildRoom, getColliders } from './room.js';
 import { buildLighting } from './lighting.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { createPost } from './post.js';
@@ -164,7 +164,7 @@ renderer.setAnimationLoop((now) => {
 });
 
 // Test hooks for headless checks. `?cam=x,y,z,tx,ty,tz` places the camera and hides the start overlay.
-window.__garage = { camera, player, scene, renderer, carSwap, stats: () => ({ triangles: countTriangles(scene) }) };
+window.__garage = { camera, player, scene, renderer, carSwap, colliders: getColliders, stats: () => ({ triangles: countTriangles(scene) }) };
 const cam = params.get('cam');
 if (cam) {
   const [x, y, z, tx, ty, tz] = cam.split(',').map(Number);
