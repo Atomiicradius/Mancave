@@ -22,7 +22,7 @@ export const ASSETS = {
   models: {
     car: {
       file: url('models/nsx.glb'), // optimized from source-models/2017_honda_nsx.glb via scripts/optimize-glb.mjs
-      fit: { size: [4.4, 1.2, 1.9], pos: [0, 0.02, 0], rotY: Math.PI / 2 },  // model's long axis is z; flip to -Math.PI / 2 if the nose points the wrong way
+      fit: { size: [4.4, 1.2, 1.9], pos: [0, 0.08, 0], rotY: Math.PI / 2 }, // y = platform height (PLATFORM.h in car.js)  // model's long axis is z; flip to -Math.PI / 2 if the nose points the wrong way
       hide: ['car-body', 'car-cabin'],
     },
     turntable: {

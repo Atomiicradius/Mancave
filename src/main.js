@@ -8,7 +8,7 @@ import { renderCredits } from './credits.js';
 import { applyModels } from './models.js';
 import { createPlayer } from './player.js';
 import { createInteraction } from './interaction.js';
-import { buildCar } from './interactables/car.js';
+import { buildCar, tuneCar } from './interactables/car.js';
 import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
@@ -28,7 +28,7 @@ scene.background = new THREE.Color(0x05030a);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 50);
 scene.add(camera);
 
-scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), buildCar(), buildVinylWall(), buildChess(), buildComputer());
+scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), buildCar({ reflectionScale: QUALITY.reflectionScale > 0 ? undefined : 0 }), buildVinylWall(), buildChess(), buildComputer());
 
 scene.add(buildLighting({ neonLights: QUALITY.neonLights }));
 // Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
@@ -56,7 +56,7 @@ const setProgress = (p) => {
 
 (async () => {
   await applyModels(scene, {
-    hooks: { turntable: vinyl.attachTurntable, computer: computer.attach },
+    hooks: { turntable: vinyl.attachTurntable, computer: computer.attach, car: tuneCar },
     onProgress: (p) => setProgress(p * 0.9),
   });
   setProgress(0.95);

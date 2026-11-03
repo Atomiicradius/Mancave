@@ -40,25 +40,29 @@ export function buildLighting({ neonLights = 4 } = {}) {
   // --- Cool fill: a handful of colored point lights near the strips (no shadows, cheap).
   g.add(new THREE.HemisphereLight(0x5a3d99, 0x0a0612, 0.6));
   // Low tier keeps the first two (diagonal corners) and boosts them to compensate.
+  // Pushed out to the room corners so every one is ~2.8 m+ from the car (they used to sit ~2 m away and put colored glints on the paint).
   const fill = [
-    [NEON.magenta, 7, [-2.6, 2.5, -2.0]],
-    [NEON.cyan, 7, [2.6, 2.5, 2.0]],
-    [NEON.purple, 7, [2.6, 2.5, -2.0]],
-    [NEON.cyan, 5, [-2.6, 2.5, 2.0]],
+    [NEON.magenta, 7, [-3.4, 2.75, -2.5]],
+    [NEON.cyan, 7, [3.4, 2.75, 2.5]],
+    [NEON.purple, 7, [3.4, 2.75, -2.5]],
+    [NEON.cyan, 5, [-3.4, 2.75, 2.5]],
   ];
   const boost = neonLights < fill.length ? 1.5 : 1;
   fill.slice(0, neonLights).forEach(([color, intensity, pos]) => pointLight(g, color, intensity * boost, 0, pos));
 
-  // --- ONE warm hero light on the car.
-  const spot = new THREE.SpotLight(0xffb070, 28, 9, 0.5, 0.6, 2);
-  spot.position.set(0.4, 2.9, 1.6);
-  spot.target.position.set(0, 0.5, 0);
+  // --- ONE soft warm light on the car (tweak HERO): wide cone + full penumbra = no hard edge and no pin-sharp glint,
+  // offset a little from straight above so the roof doesn't mirror it straight into the camera.
+  const HERO = { color: 0xffc48a, intensity: 8, angle: 0.8, penumbra: 1, pos: [0.5, 2.95, 0.8] };
+  const spot = new THREE.SpotLight(HERO.color, HERO.intensity, 0, HERO.angle, HERO.penumbra, 2);
+  spot.position.set(...HERO.pos);
+  spot.target.position.set(0, 0.4, 0);
   g.add(spot, spot.target);
 
-  // --- Small warm accents on the interactables: desk lamp, turntable console, chess board.
-  pointLight(g, 0xffa860, 2.5, 3.5, [0.7, 1.75, -1.9]); // desk glow (no visible bulb; kept above the desk so the white top doesn't blow out)
-  pointLight(g, 0xffa860, 2, 2.5, [-3.4, 1.15, -0.8]); // glow over the turntable console (no visible bulb)
-  pointLight(g, 0xffa860, 2, 2.5, [3.2, 1.55, 0]); // glow over the chess table (no visible bulb)
+  // --- Small warm accents on the interactables: desk, turntable console, chess table. No visible bulbs, and each has a short
+  // `distance` (the 4th argument) so its light dies out before it can reach the car (car edge is >=1.1 m from each).
+  pointLight(g, 0xffa860, 2.5, 1.4, [0.7, 1.8, -2.6]); // desk glow, above the desk so the white top doesn't blow out
+  pointLight(g, 0xffa860, 2, 1.2, [-3.4, 1.15, -0.8]); // turntable console
+  pointLight(g, 0xffa860, 2, 1.0, [3.2, 1.55, 0]); // chess table
 
   // --- Warm spotlight on the album wall so covers stay readable under the neon.
   const albumLight = new THREE.SpotLight(0xffc890, 14, 6, 0.42, 0.7, 2);
