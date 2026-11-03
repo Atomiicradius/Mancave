@@ -58,5 +58,12 @@ renderer.setAnimationLoop(() => {
   post.render();
 });
 
-// Test hook for headless checks.
-window.__garage = { camera, player };
+// Test hooks for headless checks. `?cam=x,y,z,tx,ty,tz` places the camera and hides the start overlay.
+window.__garage = { camera, player, scene };
+const cam = new URLSearchParams(location.search).get('cam');
+if (cam) {
+  const [x, y, z, tx, ty, tz] = cam.split(',').map(Number);
+  camera.position.set(x, y, z);
+  camera.lookAt(tx, ty, tz);
+  overlay.style.display = 'none';
+}
