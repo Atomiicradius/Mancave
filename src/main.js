@@ -10,6 +10,7 @@ import { createPlayer } from './player.js';
 import { createInteraction } from './interaction.js';
 import { buildCar } from './interactables/car.js';
 import { buildCarConsole, createCarSwap } from './interactables/carswap.js';
+import { createDecor } from './decor.js';
 import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
@@ -47,6 +48,7 @@ if (QUALITY.touch) player.controls.onTap = (x, y) => interaction.tapAt(x, y);
 const vinyl = registerVinyl(interaction);
 registerChess(interaction);
 const computer = registerComputer(interaction);
+const decor = createDecor();
 const carSwap = createCarSwap({ scene, interaction, bay: car.userData.bay, ui: carConsole });
 
 // --- Loading screen: bar tracks model downloads; "enter" unlocks once models are in and shaders are compiled.
@@ -63,7 +65,14 @@ const setProgress = (p) => {
   let pModels = 0, pCar = 0;
   const mix = () => setProgress((pModels * 0.35 + pCar * 0.55));
   await Promise.all([
-    applyModels(scene, { hooks: { turntable: vinyl.attachTurntable, computer: computer.attach }, onProgress: (p) => { pModels = p; mix(); } }),
+    applyModels(scene, { hooks: {
+        turntable: vinyl.attachTurntable,
+        computer: computer.attach,
+        neonSigns: decor.attachSigns,
+        neonSignAnimated: decor.attachAnimatedSign,
+        lampChess: (model, sc) => decor.attachLamp(model, sc, { intensity: 1.6, distance: 1.5 }),
+        lampDesk: (model, sc) => decor.attachLamp(model, sc, { intensity: 0.7, distance: 1.6 }),
+      }, onProgress: (p) => { pModels = p; mix(); } }),
     carSwap.init((p) => { pCar = p; mix(); }),
   ]);
   setProgress(0.95);
@@ -141,6 +150,7 @@ renderer.setAnimationLoop((now) => {
   interaction.update();
   vinyl.update(dt);
   carSwap.update(dt);
+  decor.update(dt);
   player.update(dt);
   renderer.info.reset();
   post.render();

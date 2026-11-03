@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { ASSETS } from './assets.js';
+import { getColliders } from './room.js';
 
 const loader = new GLTFLoader();
 const draco = new DRACOLoader();
@@ -60,6 +61,7 @@ export async function applyModels(scene, { onProgress = () => {}, hooks = {} } =
           report();
         });
         const model = gltf.scene;
+        model.animations = gltf.animations; // so hooks can play them (e.g. the animated neon sign)
         fit(model, entry.fit);
         model.name = `model-${key}`;
         model.traverse((o) => {
@@ -67,6 +69,11 @@ export async function applyModels(scene, { onProgress = () => {}, hooks = {} } =
           if (entry.interactable && isClickable(o, model, entry.interactableMatch)) o.userData.interactable = entry.interactable;
           if (o.material?.map) o.material.map.anisotropy = 4;
         });
+        if (entry.collider) {
+          // Solid footprint from the fitted model (XZ), for props that stick out into the room.
+          const b = new THREE.Box3().setFromObject(model);
+          getColliders().push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
+        }
         retire(scene, entry.hide ?? []);
         scene.add(model);
         hooks[key]?.(model, scene);

@@ -37,6 +37,34 @@ export const CREDITS = [
     license: '', // TODO: licence
     note: 'Modified: texture re-encoded.',
   },
+  {
+    name: 'Neon sign collage (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced.',
+  },
+  {
+    name: 'Animated LED sign (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: textures re-encoded.',
+  },
+  {
+    name: 'Tall lamp (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced.',
+  },
+  {
+    name: 'Desk lamp (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced.',
+  },
   { name: 'three.js', by: 'mrdoob and contributors', url: 'https://threejs.org', license: 'MIT' },
   { name: 'chess.js', by: 'Jeff Hlywa', url: 'https://github.com/jhlywa/chess.js', license: 'BSD-2-Clause' },
   {

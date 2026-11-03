@@ -58,11 +58,9 @@ export function buildLighting({ neonLights = 4 } = {}) {
   spot.target.position.set(0, 0.4, 0);
   g.add(spot, spot.target);
 
-  // --- Small warm accents on the interactables: desk, turntable console, chess table. No visible bulbs, and each has a short
-  // `distance` (the 4th argument) so its light dies out before it can reach the car (car edge is >=1.1 m from each).
-  pointLight(g, 0xffa860, 2.5, 1.4, [0.7, 1.8, -2.6]); // desk glow, above the desk so the white top doesn't blow out
+  // --- Small warm accent over the turntable console (the desk and chess-table lamps now bring their own lights, see decor.js).
+  // Short `distance` so it dies out before it can reach the car.
   pointLight(g, 0xffa860, 2, 1.2, [-3.4, 1.15, -0.8]); // turntable console
-  pointLight(g, 0xffa860, 2, 1.0, [3.2, 1.55, 0]); // chess table
 
   // --- Warm spotlight on the album wall so covers stay readable under the neon.
   const albumLight = new THREE.SpotLight(0xffc890, 14, 6, 0.42, 0.7, 2);

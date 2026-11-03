@@ -31,6 +31,30 @@ export const ASSETS = {
     },
     // Source files are far too heavy for the web, so these are optimized copies (originals in source-models/):
     //   scripts/optimize-scene-glb.mjs <in> <out> [--tex N] [--ratio R --ratio-min N] [--big N --big-target N]
+    // ---- Decor (non-interactive). Originals in source-models/; optimized with scripts/optimize-scene-glb.mjs. ----
+    neonSigns: {
+      // The multi-sign collage on the blank left-wall section next to the vinyl console (couch goes below it).
+      // The glb's thin axis is x, so it already faces the room from the left wall; rotY flips which side faces out.
+      file: url('models/neon-signs.glb'),
+      fit: { size: [0.1, 1.6, 1.65], pos: [-3.95, 0.95, 1.55], rotY: 0 },
+    },
+    neonSignAnimated: {
+      // Animated LED "blade" sign: a panel on bracket arms that projects from a wall plate (the plate is the model's +x end),
+      // so it goes on the right wall between the chess table and the back corner. The panel faces +z, toward the spawn view.
+      file: url('models/neon-sign-animated.glb'),
+      fit: { size: [1.2, 1.5, 0.25], pos: [3.455, 1.1, -1.75], rotY: 0 }, // x = 4 - half its fitted length: plate flush with the wall
+      collider: true, // it projects into the room at head height, so it blocks walking like a solid prop
+    },
+    lampChess: {
+      // On the half-round chess table, beside the board.
+      file: url('models/lamp-tall.glb'),
+      fit: { size: [0.2, 0.55, 0.2], pos: [3.86, 1.086, 0.36], rotY: 0 },
+    },
+    lampDesk: {
+      // On the left end of the computer desk (desk top is ~0.79 m).
+      file: url('models/lamp-desk.glb'),
+      fit: { size: [0.32, 0.45, 0.32], pos: [-0.78, 0.79, -2.72], rotY: 0 },
+    },
     cabinet: {
       // Cabinet the chessboard sits on, against the right wall. Its front is +z in the model, so -PI/2 turns it to face -x (the room).
       file: url('models/cabinet.glb'),
