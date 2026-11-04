@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { QUALITY } from './quality.js';
+import { QUALITY, setQuality } from './quality.js';
 import { buildRoom, getColliders } from './room.js';
 import { buildLighting } from './lighting.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -101,6 +101,14 @@ overlay.addEventListener('click', () => {
   if (!overlay.classList.contains('loading')) player.controls.lock();
 });
 
+// High/Low quality toggle on the start screen (remembered; reloads the page since the two tiers build different scenes).
+const qBtn = document.getElementById('quality-toggle');
+qBtn.textContent = `Quality: ${QUALITY.low ? 'Low' : 'High'} (tap to switch)`;
+qBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setQuality(QUALITY.low ? 'high' : 'low');
+});
+
 // Credits panel on the start screen; clicks inside it must not start the game.
 const creditsEl = document.getElementById('credits');
 renderCredits(creditsEl);
@@ -122,6 +130,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   post.setSize(innerWidth, innerHeight);
+  scene.traverse((o) => o.userData.resize?.()); // reflections follow the canvas size
 });
 
 // Triangles in the visible scene (one pass; the floor reflection renders it a second time).

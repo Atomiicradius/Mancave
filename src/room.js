@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Reflector } from 'three/addons/objects/Reflector.js';
+import { buildFloor } from './floor.js';
 
 // Room dimensions in meters. Centered on x/z origin, floor at y=0.
 export const ROOM = { w: 8, d: 6, h: 3, wall: 0.2 };
@@ -89,38 +89,13 @@ function slabsAround(room, name, y, thickness, color, hole) {
   addBox(room, { name: `${name}-back`, size: [hole.w, thickness, d / 2 - hd], pos: [0, y, -(hd + d / 2) / 2], color });
 }
 
-function glossyFloor(w, d, renderScale) {
-  const floor = new Reflector(rectWithHole(w, d, BAY.floor), {
-    color: 0x3a3548,
-    textureWidth: Math.round(1024 * renderScale),
-    textureHeight: Math.round(768 * renderScale),
-    clipBias: 0.003,
-  });
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = 0.001;
-  floor.name = 'floor-reflector';
-  return floor;
-}
-
-// Low-tier floor: no second scene render; glossy PBR material that picks up the scene's environment map instead.
-function cheapFloor(w, d) {
-  const floor = new THREE.Mesh(
-    rectWithHole(w, d, BAY.floor),
-    new THREE.MeshStandardMaterial({ color: 0x1b1824, roughness: 0.25, metalness: 0.6 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = 0.001;
-  floor.name = 'floor-glossy';
-  return floor;
-}
-
 // reflectionScale: planar reflection render scale (0 = use the cheap floor).
-export function buildRoom({ reflectionScale = 0.6 } = {}) {
+export function buildRoom({ reflectionScale = 0.75 } = {}) {
   const room = new THREE.Group();
   const { w, d, h, wall: t } = ROOM;
 
   slabsAround(room, 'floor', -BAY.floor.slab / 2, BAY.floor.slab, 0x0c0a12, BAY.floor);
-  room.add(reflectionScale > 0 ? glossyFloor(w, d, reflectionScale) : cheapFloor(w, d));
+  room.add(buildFloor(rectWithHole(w, d, BAY.floor), w, d, BAY.floor, reflectionScale));
   slabsAround(room, 'ceiling', h + 0.05, 0.1, 0x15121c, BAY.ceil);
 
   // Walls sit just outside the interior volume so the interior is exactly w x d.
