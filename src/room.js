@@ -8,8 +8,8 @@ export const ROOM = { w: 8, d: 6, h: 3, wall: 0.2 };
 // is a ~0.8 m lane to walk around it on the platform. The floor one (the platform's footprint) is the pit the next car rises from;
 // the ceiling one lets the old car leave. Hatch panels slide into the slab around each opening (see interactables/car.js).
 export const BAY = {
-  floor: { w: 6.0, d: 3.4, pit: 1.7, slab: 0.2 }, // pit = depth below the floor; slab = floor thickness (the platform halves hide inside it)
-  ceil: { w: 4.8, d: 2.3, shaft: 2.1 }, // shaft = height of the dark void above the ceiling
+  floor: { w: 5.4, d: 3.4, pit: 2.0, slab: 0.2 }, // pit = depth below the floor; slab = floor thickness (the platform halves hide inside it)
+  ceil: { w: 4.8, d: 2.3, shaft: 2.4 }, // shaft = height of the dark void above the ceiling
 };
 
 const colliders = []; // XZ-plane AABBs: { minX, maxX, minZ, maxZ }

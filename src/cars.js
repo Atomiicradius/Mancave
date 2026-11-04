@@ -36,39 +36,36 @@ export const CARS = [
     },
   },
   {
-    id: 'car-2',
-    name: 'Placeholder Coupe',
-    year: null,
-    file: null,
-    box: { color: 0x2f6bff },
-    scale: 1,
-    rotationY: 0,
+    id: 'p1',
+    name: 'McLaren P1',
+    year: 2013,
+    file: url('models/cars/mclaren-p1.glb'),
+    scale: 1.08, // the P1 is wide for its length, so it needs a slightly bigger box to reach the same length as the others
+    rotationY: Math.PI / 2,
     positionOffset: [0, 0, 0],
-    description: 'Placeholder box car #2: swap in a real model in src/cars.js.',
-    credit: null,
+    description: 'Hybrid hypercar: a twin-turbo V8 plus an electric motor, around 900 hp.',
+    credit: { title: 'McLaren P1', by: '', url: '', license: '', note: 'Modified: polygon count reduced, textures re-encoded.' }, // TODO: author / source / licence
   },
   {
-    id: 'car-3',
-    name: 'Placeholder Roadster',
-    year: null,
-    file: null,
-    box: { color: 0xe83a5f },
-    scale: 1,
-    rotationY: 0,
+    id: 'willys',
+    name: 'Willys Jeep',
+    year: 1941,
+    file: url('models/cars/willys-jeep.glb'),
+    scale: 1.5, // much taller than the sports cars, so the fit box is scaled up (it ends up ~4 m long, ~1.8 m tall)
+    rotationY: -Math.PI / 2, // this model's nose is on its -z side, the opposite of the others
     positionOffset: [0, 0, 0],
-    description: 'Placeholder box car #3: swap in a real model in src/cars.js.',
-    credit: null,
+    description: 'The wartime 4x4 that started the Jeep legend: light, simple and nearly unstoppable.',
+    credit: { title: 'Willys Jeep', by: '', url: '', license: '', note: 'Modified: polygon count reduced, textures re-encoded.' }, // TODO: author / source / licence
   },
   {
-    id: 'car-4',
-    name: 'Placeholder GT',
-    year: null,
-    file: null,
-    box: { color: 0x3fd08a },
-    scale: 1,
-    rotationY: 0,
+    id: 'impala',
+    name: 'Chevrolet Impala',
+    year: 1967,
+    file: url('models/cars/chevy-impala.glb'),
+    scale: 1.28, // tall for its length, so the box is scaled up to keep it ~4.4 m long
+    rotationY: Math.PI / 2,
     positionOffset: [0, 0, 0],
-    description: 'Placeholder box car #4: swap in a real model in src/cars.js.',
-    credit: null,
+    description: 'A full-size American cruiser: long, low and unmistakably 1960s.',
+    credit: { title: 'Chevrolet Impala 1967', by: '', url: '', license: '', note: 'Modified: textures re-encoded, wheels simplified.' }, // TODO: author / source / licence
   },
 ];

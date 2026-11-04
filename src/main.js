@@ -74,7 +74,7 @@ const setProgress = (p) => {
         lampChess: (model, sc) => decor.attachLamp(model, sc, { intensity: 1.6, distance: 1.5 }),
         lampDesk: (model, sc) => decor.attachLamp(model, sc, { intensity: 0.7, distance: 1.6 }),
       }, onProgress: (p) => { pModels = p; mix(); } }),
-    carSwap.init((p) => { pCar = p; mix(); }),
+    carSwap.init((p) => { pCar = p; mix(); }, Math.min(Math.max(0, Number(params.get('car')) || 0), 99)), // `?car=N` starts on car N (for testing)
   ]);
   setProgress(0.95);
   try {

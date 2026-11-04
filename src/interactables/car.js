@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
-import { addBox, ROOM, BAY } from '../room.js';
+import { addBox, getColliders, ROOM, BAY } from '../room.js';
 
 // ---- Car paint (tweak here; applies to every car in src/cars.js) -------------------------------------------------
 export const CAR = {
@@ -299,7 +299,7 @@ function buildFloorGlow(parent) {
 }
 
 // The car bay: raised platform (two sliding halves over a pit), ceiling hatch + shaft, floor glow.
-// The returned group has `userData.bay = { setFloor(drop, slide), setCeiling(slide), groundAt(x, z) }`. The cars themselves are added by
+// The returned group has `userData.bay = { setFloor(drop, slide), setCeiling(slide), groundAt(x, z), setCollider(minX, maxX, minZ, maxZ) }`. The cars themselves are added by
 // interactables/carswap.js; this only keeps an invisible collider where the car stands.
 export function buildCar({ reflectionScale = PLATFORM.reflectionScale } = {}) {
   const g = new THREE.Group();
@@ -313,11 +313,13 @@ export function buildCar({ reflectionScale = PLATFORM.reflectionScale } = {}) {
   setCeiling(0);
   // Floor height at (x, z): the platform top over its footprint (it is only ever open during a swap, when the area is blocked).
   const groundAt = (x, z) => (Math.abs(x) <= PLATFORM.w / 2 && Math.abs(z) <= PLATFORM.d / 2 ? PLATFORM.h : 0);
-  g.userData.bay = { setFloor, setCeiling, groundAt };
 
   const collider = addBox(g, { name: 'car-collider', size: [4.4, 0.6, 1.9], pos: [0, 0.5, 0], solid: true });
   collider.visible = false;
   collider.raycast = () => {};
+  const box = getColliders().at(-1); // the XZ box addBox just registered; resized per car by setCollider
+  const setCollider = (minX, maxX, minZ, maxZ) => Object.assign(box, { minX, maxX, minZ, maxZ });
+  g.userData.bay = { setFloor, setCeiling, groundAt, setCollider };
   return g;
 }
 

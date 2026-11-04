@@ -65,6 +65,13 @@ export const CREDITS = [
     license: '', // TODO: licence
     note: 'Modified: polygon count reduced.',
   },
+  {
+    name: 'Sofa (3D model)',
+    by: '', // TODO: author
+    url: '', // TODO: source link
+    license: '', // TODO: licence
+    note: 'Modified: polygon count reduced, textures re-encoded.',
+  },
   { name: 'three.js', by: 'mrdoob and contributors', url: 'https://threejs.org', license: 'MIT' },
   { name: 'chess.js', by: 'Jeff Hlywa', url: 'https://github.com/jhlywa/chess.js', license: 'BSD-2-Clause' },
   {

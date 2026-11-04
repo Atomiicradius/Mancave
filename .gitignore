@@ -6,3 +6,9 @@ source-models/classic_chessboard.glb
 source-models/computer.glb
 
 source-models/neon_signs_multiple.glb
+
+# More huge originals (kept locally; optimized copies ship)
+source-models/impala_1967.glb
+source-models/willy_jeep.glb
+source-models/mclaren_p1.glb
+source-models/couch.glb

@@ -326,13 +326,21 @@ export function createCarSwap({ scene, camera, interaction, bay, ui }) {
     pruneCache();
   };
 
-  async function init(onProgress) {
-    current = await ensure(0, onProgress);
+  // Fit the walk-blocking box to the car on the platform (cars differ in size), with a little margin.
+  function syncCollider() {
+    const b = new THREE.Box3().setFromObject(current, true); // exact vertex bounds (the default over-estimates rotated parts)
+    bay.setCollider(b.min.x - 0.05, b.max.x + 0.05, b.min.z - 0.05, b.max.z + 0.05);
+  }
+
+  async function init(onProgress, start = 0) {
+    cur = start;
+    current = await ensure(start, onProgress);
     current.position.copy(current.userData.rest);
     current.visible = true;
     bay.setFloor(0, 0);
     bay.setCeiling(0);
-    ui.setCar(CARS[0], 0, n);
+    ui.setCar(CARS[start], start, n);
+    syncCollider();
     syncNav();
     preloadNext();
   }
@@ -381,6 +389,7 @@ export function createCarSwap({ scene, camera, interaction, bay, ui }) {
     busy = false;
     ui.setBusy(false);
     ui.setCar(CARS[cur], cur, n);
+    syncCollider();
     showCard(CARS[cur]);
     syncNav();
     preloadNext();

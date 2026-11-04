@@ -29,6 +29,14 @@ export const ASSETS = {
       hide: ['turntable-placeholder', 'platter-placeholder'],
       interactable: 'turntable',
     },
+    couch: {
+      // Two-seater below the sign collage, backrest against the left wall. The model is authored on a diagonal (its long axis is
+      // 54 deg off x), so rotY = 146 deg (found by minimizing its footprint) turns it to run along the wall with the backrest at the wall side.
+      // Footprint ~1.8 x 0.95 m: the gap between this wall and the car platform's edge (BAY.floor.w / 2) is only ~1.3 m.
+      file: url('models/couch.glb'),
+      fit: { size: [0.95, 0.9, 1.9], pos: [-3.47, 0, 1.55], rotY: (146 * Math.PI) / 180 },
+      collider: true,
+    },
     // Source files are far too heavy for the web, so these are optimized copies (originals in source-models/):
     //   scripts/optimize-scene-glb.mjs <in> <out> [--tex N] [--ratio R --ratio-min N] [--big N --big-target N]
     // ---- Decor (non-interactive). Originals in source-models/; optimized with scripts/optimize-scene-glb.mjs. ----

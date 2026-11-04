@@ -13,12 +13,13 @@ loader.setDRACOLoader(draco);
 export function fit(model, { size, pos, rotY = 0 }) {
   model.rotation.y = rotY;
   model.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(model);
+  // `precise`: measure the actual vertices. The default box-of-boxes method inflates parts that are modeled on a diagonal.
+  const box = new THREE.Box3().setFromObject(model, true);
   const dim = box.getSize(new THREE.Vector3());
   const s = Math.min(size[0] / dim.x, size[1] / dim.y, size[2] / dim.z);
   model.scale.setScalar(s);
   model.updateMatrixWorld(true);
-  box.setFromObject(model);
+  box.setFromObject(model, true);
   const c = box.getCenter(new THREE.Vector3());
   model.position.set(pos[0] - c.x, pos[1] - box.min.y, pos[2] - c.z);
 }
@@ -71,7 +72,7 @@ export async function applyModels(scene, { onProgress = () => {}, hooks = {} } =
         });
         if (entry.collider) {
           // Solid footprint from the fitted model (XZ), for props that stick out into the room.
-          const b = new THREE.Box3().setFromObject(model);
+          const b = new THREE.Box3().setFromObject(model, true);
           getColliders().push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
         }
         retire(scene, entry.hide ?? []);
