@@ -11,7 +11,7 @@ export const CEILING = {
   beamX: 3.3, // the two cross beams run along z at x = +/- this
   fixtureDrop: 0.4, // how far the tube fixtures hang below the lower truss chord
   tube: 2.2, // emissive strength of the tubes (the bloom threshold is ~1, so this just starts to glow)
-  shaftOpacity: 0.07, // light shaft brightness (High only; 0 = off)
+  shaftOpacity: 0.055, // light shaft brightness (High only; 0 = off)
 };
 
 // Merge-ready box: size [x, y, z] centered at pos, optionally rotated about z (diagonals) or y.

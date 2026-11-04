@@ -13,6 +13,7 @@ import { buildCarConsole, createCarSwap } from './interactables/carswap.js';
 import { createDecor } from './decor.js';
 import { buildCeilingRig } from './ceiling.js';
 import { buildProps } from './props.js';
+import { applyFog } from './atmosphere.js';
 import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
@@ -28,6 +29,7 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05030a);
+applyFog(scene);
 
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 50);
 scene.add(camera);
