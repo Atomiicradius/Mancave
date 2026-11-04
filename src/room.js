@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { buildFloor } from './floor.js';
+import { plasterTexture, addWallGrime } from './walls.js';
 
 // Room dimensions in meters. Centered on x/z origin, floor at y=0.
 export const ROOM = { w: 8, d: 6, h: 3, wall: 0.2 };
@@ -37,30 +38,42 @@ export function addBox(parent, { size, pos, color = 0x444444, solid = false, nam
   return mesh;
 }
 
-// Small procedural brick tile (256px, repeats seamlessly), tinted dark so neon light reads on it.
-function brickTexture() {
-  const c = document.createElement('canvas');
-  c.width = c.height = 256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#1a1220';
-  ctx.fillRect(0, 0, 256, 256);
+// Small procedural brick tile (256px, repeats seamlessly), tinted dark so neon light reads on it. Returns the color map and a
+// matching roughness map: mortar is rough, bricks are a little smoother and each differs slightly.
+function brickTextures() {
+  const mk = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    return c;
+  };
+  const color = mk(), rough = mk();
+  const cx = color.getContext('2d'), rx = rough.getContext('2d');
+  cx.fillStyle = '#1a1220';
+  cx.fillRect(0, 0, 256, 256);
+  rx.fillStyle = 'rgb(245,245,245)'; // mortar
+  rx.fillRect(0, 0, 256, 256);
   const rows = 8, bw = 64, bh = 256 / rows;
   for (let r = 0; r < rows; r++) {
     for (let i = -1; i < 4; i++) {
       const x = i * bw + (r % 2 ? bw / 2 : 0);
       const l = 28 + Math.random() * 14;
-      ctx.fillStyle = `hsl(${350 + Math.random() * 20}, 28%, ${l}%)`;
-      ctx.fillRect(x + 2, r * bh + 2, bw - 4, bh - 4);
+      cx.fillStyle = `hsl(${350 + Math.random() * 20}, 28%, ${l}%)`;
+      cx.fillRect(x + 2, r * bh + 2, bw - 4, bh - 4);
+      const g = Math.round((0.5 + Math.random() * 0.28) * 255); // smoother bricks reflect a bit more light
+      rx.fillStyle = `rgb(${g},${g},${g})`;
+      rx.fillRect(x + 2, r * bh + 2, bw - 4, bh - 4);
     }
   }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
+  const tex = (canvas, srgb) => {
+    const t = new THREE.CanvasTexture(canvas);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  };
+  return { color: tex(color, true), rough: tex(rough, false) };
 }
 
-// Dark glossy floor: a planar reflection (so neon strips and the car mirror in it), tinted dark.
 // Flat rectangle with a rectangular hole (the pit opening), in the XY plane like PlaneGeometry.
 function rectWithHole(w, d, hole) {
   const shape = new THREE.Shape();
@@ -99,22 +112,31 @@ export function buildRoom({ reflectionScale = 0.75 } = {}) {
   slabsAround(room, 'ceiling', h + 0.05, 0.1, 0x15121c, BAY.ceil);
 
   // Walls sit just outside the interior volume so the interior is exactly w x d.
-  const bricks = brickTexture();
-  const wallTex = (sx, sy) => {
-    const tex = bricks.clone();
+  const bricks = brickTextures();
+  const wallTex = (src, sx, sy) => {
+    const tex = src.clone();
     tex.needsUpdate = true;
     tex.repeat.set(sx / 1.2, sy / 1.2);
     return tex;
   };
   const wall = (name, size, pos) => {
     const m = addBox(room, { name, size, pos, color: 0xffffff, solid: true });
-    m.material.map = wallTex(Math.max(size[0], size[2]), size[1]);
-    m.material.roughness = 0.9;
+    const len = Math.max(size[0], size[2]);
+    if (name === 'wall-left') {
+      // painted concrete panels instead of brick (see walls.js WALLS.plaster)
+      m.material.map = plasterTexture(d, h, 11);
+      m.material.roughness = 0.88;
+    } else {
+      m.material.map = wallTex(bricks.color, len, size[1]);
+      m.material.roughnessMap = wallTex(bricks.rough, len, size[1]);
+      m.material.roughness = 1; // the map scales this
+    }
   };
   wall('wall-back',  [w + 2 * t, h, t], [0, h / 2, -d / 2 - t / 2]);
   wall('wall-front', [w + 2 * t, h, t], [0, h / 2,  d / 2 + t / 2]);
   wall('wall-left',  [t, h, d], [-w / 2 - t / 2, h / 2, 0]);
   wall('wall-right', [t, h, d], [ w / 2 + t / 2, h / 2, 0]);
+  addWallGrime(room, ROOM); // floor grime, stains and streaks, on all four walls
 
   return room;
 }
