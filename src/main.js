@@ -11,6 +11,7 @@ import { createInteraction } from './interaction.js';
 import { buildCar } from './interactables/car.js';
 import { buildCarConsole, createCarSwap } from './interactables/carswap.js';
 import { createDecor } from './decor.js';
+import { buildCeilingRig } from './ceiling.js';
 import { buildVinylWall, registerVinyl } from './interactables/vinyl.js';
 import { buildChess, registerChess } from './interactables/chess.js';
 import { buildComputer, registerComputer } from './interactables/computer.js';
@@ -35,6 +36,7 @@ const carConsole = buildCarConsole();
 scene.add(buildRoom({ reflectionScale: QUALITY.reflectionScale }), car, carConsole.group, buildVinylWall(), buildChess(), buildComputer());
 
 scene.add(buildLighting({ neonLights: QUALITY.neonLights }));
+scene.add(buildCeilingRig());
 // Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.25;
