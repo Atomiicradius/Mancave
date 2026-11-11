@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ROOM } from './room.js';
-import { QUALITY } from './quality.js';
+import { QUALITY, FLAGS } from './quality.js';
 
 // ---- Ceiling rig (tweak here) -----------------------------------------------------------------------------------------
 export const CEILING = {
@@ -90,6 +90,7 @@ function makeShaft(x, yTop, z, color) {
     depthWrite: false,
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
+    defines: FLAGS.shaftBug ? { OLD_SHAFT_POW: 1 } : {}, // ?shaftbug=1 only: the original expression, for reproducing the bug
     uniforms: { color: { value: new THREE.Color(color) }, opacity: { value: CEILING.shaftOpacity } },
     vertexShader: /* glsl */ `
       attribute float fade;
@@ -110,9 +111,24 @@ function makeShaft(x, yTop, z, color) {
       varying vec3 vN;
       varying vec3 vView;
       void main() {
-        float f = pow( abs( dot( normalize( vN ), normalize( vView ) ) ), 1.6 ); // soft silhouette
+        #ifdef OLD_SHAFT_POW
+        // original (buggy): vFade is interpolated from 1 down to 0 and can come out a hair below 0 at the cone's lower edge,
+        // and pow() of a negative base is undefined in GLSL (real GPUs return NaN).
+        float f = pow( abs( dot( normalize( vN ), normalize( vView ) ) ), 1.6 );
         float a = opacity * f * pow( vFade, 1.5 );
-        gl_FragColor = vec4( color * a, 1.0 );
+        #else
+        // Every step below is defined for every input: no pow() of a possibly-negative value, no normalize() of a possibly-zero
+        // vector, and the result is bounded (opacity * 1 * 1 = at most ~0.05 per face, ~0.1 where two faces overlap).
+        float nl = length( vN );
+        float vl = length( vView );
+        vec3 n = nl > 1e-5 ? vN / nl : vec3( 0.0, 1.0, 0.0 );
+        vec3 v = vl > 1e-5 ? vView / vl : vec3( 0.0, 0.0, 1.0 );
+        float facing = clamp( abs( dot( n, v ) ), 0.0, 1.0 );
+        float f = pow( max( facing, 1e-4 ), 1.6 ); // soft silhouette (base is >= 1e-4, so pow is always defined)
+        float fd = clamp( vFade, 0.0, 1.0 );
+        float a = clamp( opacity, 0.0, 1.0 ) * f * fd * sqrt( fd ); // fd^1.5 without pow()
+        #endif
+        gl_FragColor = vec4( clamp( color * a, 0.0, 1.0 ), 1.0 ); // alpha stays 1: additive blending uses it as a multiplier
       }`,
   });
   const mesh = new THREE.Mesh(g, m);

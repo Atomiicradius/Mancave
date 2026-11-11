@@ -4,6 +4,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FLAGS } from './quality.js';
 
 // Look controls (tweak here). ACES filmic tone mapping is always on.
 //  exposure       lower = darker/less blown-out highlights on the white paint (was 1.0)
@@ -16,6 +17,37 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 //  vignetteStart  distance from the center (0 = center, 1 = corner) where the darkening begins
 //  grain          film grain amplitude, 0 = off, ~0.03 = subtle. Animated, and strongest in the midtones.
 export const POST = { exposure: 0.8, bloomStrength: 0.4, bloomRadius: 0.5, bloomThreshold: 1.0, vignette: 0.3, vignetteStart: 0.42, grain: 0.03 };
+
+// Runs on the HDR scene right before bloom so one bad pixel can never reach the blur chain (bloom's mip chain would spread a NaN or a
+// huge value over blocks of the screen). Non-finite pixels become black (or bright magenta with ?nan=1, to show where they were);
+// everything else is clamped to [0, 10], well above anything the scene legitimately produces (neon ~2.5, bulbs ~2) and far below the
+// half-float limit (65504).
+const SanitizeShader = {
+  name: 'SanitizeShader',
+  uniforms: { tDiffuse: { value: null }, uShow: { value: 0 } },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uShow;
+    varying vec2 vUv;
+    bool bad( float x ) {
+      // isnan/isinf can be optimized away by some drivers, so also test the magnitude the portable way: NaN fails every comparison.
+      return isnan( x ) || isinf( x ) || !( abs( x ) < 60000.0 );
+    }
+    void main() {
+      vec4 c = texture2D( tDiffuse, vUv );
+      if ( bad( c.r ) || bad( c.g ) || bad( c.b ) || bad( c.a ) ) {
+        gl_FragColor = vec4( uShow > 0.5 ? vec3( 4.0, 0.0, 4.0 ) : vec3( 0.0 ), 1.0 );
+        return;
+      }
+      gl_FragColor = vec4( clamp( c.rgb, 0.0, 10.0 ), 1.0 );
+    }`,
+};
 
 // Final pass, after OutputPass (so it works on display-ready sRGB color): vignette + film grain.
 const FinishShader = {
@@ -55,7 +87,7 @@ const FinishShader = {
       float n = hash( gl_FragCoord.xy + fract( uTime ) * 311.0 ) - 0.5;
       float luma = dot( col, vec3( 0.299, 0.587, 0.114 ) );
       col += n * uGrain * ( 0.35 + 1.3 * ( 1.0 - abs( luma * 2.0 - 1.0 ) ) );
-      gl_FragColor = vec4( col, 1.0 );
+      gl_FragColor = vec4( clamp( col, 0.0, 1.0 ), 1.0 ); // grain can push a dark pixel slightly negative; the output is display-range anyway
     }`,
 };
 
@@ -78,6 +110,11 @@ export function createPost(renderer, scene, camera, { samples = 0, enabled = tru
   const target = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
+  if (!FLAGS.sanitizeOff) {
+    const sanitize = new ShaderPass(SanitizeShader);
+    sanitize.uniforms.uShow.value = FLAGS.nan ? 1 : 0;
+    composer.addPass(sanitize);
+  }
   const bloom = useBloom ? new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), POST.bloomStrength, POST.bloomRadius, POST.bloomThreshold) : null;
   if (bloom) composer.addPass(bloom);
   composer.addPass(new OutputPass());

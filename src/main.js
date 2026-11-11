@@ -59,7 +59,12 @@ function logSizes(label) {
     `  window ${innerWidth}x${innerHeight} | devicePixelRatio ${devicePixelRatio} | renderer.getPixelRatio() ${renderer.getPixelRatio()}`,
     `  renderer.getSize() ${sz.x}x${sz.y} | drawing buffer ${db.x}x${db.y} | canvas attr ${c.width}x${c.height} | canvas css ${c.clientWidth}x${c.clientHeight}`,
     ...(rows.length
-      ? rows.map(([n, rt]) => `  target ${n.padEnd(22)} ${rt.width}x${rt.height}${rt.samples ? ` (MSAA x${rt.samples})` : ''}`)
+      ? rows.map(([n, rt]) => {
+          const type = { [THREE.HalfFloatType]: 'HalfFloat', [THREE.FloatType]: 'Float', [THREE.UnsignedByteType]: 'UnsignedByte' }[rt.texture.type] ?? rt.texture.type;
+          // the two composer targets must equal the drawing buffer exactly (they are the full-resolution HDR scene buffers)
+          const note = n.startsWith('composer.') ? (rt.width === db.x && rt.height === db.y ? ' == drawing buffer OK' : ' != DRAWING BUFFER (MISMATCH)') : '';
+          return `  target ${n.padEnd(22)} ${rt.width}x${rt.height} ${type}${rt.samples ? ` MSAAx${rt.samples}` : ''}${note}`;
+        })
       : ['  (no extra render targets)']),
     `  flags ${JSON.stringify(FLAGS)} | quality ${QUALITY.low ? 'low' : 'high'}`,
   ];

@@ -23,6 +23,12 @@ export const FLAGS = {
   bloomOff: params.get('bloom') === 'off',
   shaftsOff: params.get('shafts') === 'off',
   debug: params.get('debug') === '1',
+  // ?nan=1       any non-finite (NaN/Inf) pixel in the HDR buffer is painted bright magenta just before bloom, so none should show
+  // ?sanitize=off  skip the NaN/range sanitizer before bloom (shows what an unfiltered bad pixel does)
+  // ?shaftbug=1  restore the old light-shaft shader (pow of a possibly negative value) to reproduce the original bug
+  nan: params.get('nan') === '1',
+  sanitizeOff: params.get('sanitize') === 'off',
+  shaftBug: params.get('shaftbug') === '1',
 };
 
 export const TOUCH = params.get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
