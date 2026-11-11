@@ -11,6 +11,20 @@ function stored() {
   }
 }
 
+// Bisect flags for diagnosing High-tier rendering problems. Each works together with ?q=high:
+//   ?floor=off   no planar reflections (floor + platform): uses the Low floor material
+//   ?post=off    no EffectComposer: renders straight to the canvas (no bloom, vignette or grain)
+//   ?bloom=off   keep the composer but skip the bloom pass
+//   ?shafts=off  no light shafts
+//   ?debug=1     log renderer size, pixel ratio and every render target's size at startup and after each resize
+export const FLAGS = {
+  floorOff: params.get('floor') === 'off',
+  postOff: params.get('post') === 'off',
+  bloomOff: params.get('bloom') === 'off',
+  shaftsOff: params.get('shafts') === 'off',
+  debug: params.get('debug') === '1',
+};
+
 export const TOUCH = params.get('touch') === '1' || matchMedia('(pointer: coarse)').matches;
 const choice = params.get('q') ?? stored();
 const low = choice ? choice === 'low' : TOUCH;
@@ -20,10 +34,10 @@ export const QUALITY = {
   touch: TOUCH,
   pixelRatio: Math.min(devicePixelRatio, low ? 1.5 : 2),
   // Planar reflections (floor + car platform): size relative to the canvas; 0 = no extra scene pass (cheap glossy material).
-  reflectionScale: low ? 0 : 0.75,
+  reflectionScale: low || FLAGS.floorOff ? 0 : 0.75,
   msaaSamples: low ? 0 : 4, // post-processing target is not antialiased by the canvas, so it gets its own MSAA
   neonLights: low ? 2 : 4, // dynamic colored point lights (each one costs per-pixel lighting work)
-  shafts: !low, // faint light shafts under the hanging tube lights
+  shafts: !low && !FLAGS.shaftsOff, // faint light shafts under the hanging tube lights
   fog: true, // very light exponential fog (cheap, so on for both tiers)
 };
 

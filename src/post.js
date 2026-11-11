@@ -61,15 +61,25 @@ const FinishShader = {
 
 // Scene -> bloom (only HDR-bright pixels: neon strips, bulbs, highlights) -> tone map + sRGB.
 // `samples`: MSAA samples for the HDR render target (0 = off); the canvas's own antialiasing doesn't apply to it.
-export function createPost(renderer, scene, camera, { samples = 0 } = {}) {
+// `enabled: false` skips the composer entirely (plain renderer.render to the canvas, tone mapping still applied by the renderer);
+// `bloom: false` keeps the composer but leaves the bloom pass out. Both exist for bisecting rendering problems (see FLAGS in quality.js).
+export function createPost(renderer, scene, camera, { samples = 0, enabled = true, bloom: useBloom = true } = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = POST.exposure;
+
+  if (!enabled) {
+    return {
+      render: () => renderer.render(scene, camera),
+      setSize() {},
+      targets: () => [],
+    };
+  }
 
   const target = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), POST.bloomStrength, POST.bloomRadius, POST.bloomThreshold);
-  composer.addPass(bloom);
+  const bloom = useBloom ? new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), POST.bloomStrength, POST.bloomRadius, POST.bloomThreshold) : null;
+  if (bloom) composer.addPass(bloom);
   composer.addPass(new OutputPass());
   const finish = new ShaderPass(FinishShader);
   composer.addPass(finish);
@@ -82,6 +92,16 @@ export function createPost(renderer, scene, camera, { samples = 0 } = {}) {
     setSize(w, h) {
       composer.setPixelRatio(renderer.getPixelRatio());
       composer.setSize(w, h);
+    },
+    // Every render target the composer owns, for ?debug=1.
+    targets() {
+      const t = [['composer.rt1', composer.renderTarget1], ['composer.rt2', composer.renderTarget2]];
+      if (bloom) {
+        t.push(['bloom.bright', bloom.renderTargetBright]);
+        bloom.renderTargetsHorizontal.forEach((r, i) => t.push([`bloom.h${i}`, r]));
+        bloom.renderTargetsVertical.forEach((r, i) => t.push([`bloom.v${i}`, r]));
+      }
+      return t;
     },
   };
 }

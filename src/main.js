@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { QUALITY, setQuality } from './quality.js';
+import { QUALITY, FLAGS, setQuality } from './quality.js';
 import { buildRoom, getColliders } from './room.js';
 import { buildLighting } from './lighting.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -20,8 +20,8 @@ import { buildComputer, registerComputer } from './interactables/computer.js';
 
 const params = new URLSearchParams(location.search);
 
-// The post-processing target does its own MSAA, so the canvas itself needs no antialiasing.
-const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+// The post-processing target does its own MSAA, so the canvas itself needs no antialiasing (unless ?post=off removes the composer).
+const renderer = new THREE.WebGLRenderer({ antialias: FLAGS.postOff, powerPreference: 'high-performance' });
 renderer.setPixelRatio(QUALITY.pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.info.autoReset = false; // accumulate stats across the composer/reflector passes (reset once per frame)
@@ -44,8 +44,28 @@ scene.add(buildProps());
 // Dim studio environment so metallic/glossy models (turntable, car paint) have something to reflect.
 scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.25;
-const post = createPost(renderer, scene, camera, { samples: QUALITY.msaaSamples });
+const post = createPost(renderer, scene, camera, { samples: QUALITY.msaaSamples, enabled: !FLAGS.postOff, bloom: !FLAGS.bloomOff });
 post.setSize(innerWidth, innerHeight);
+
+// ?debug=1: print the renderer's and every render target's size, now and after each resize.
+function logSizes(label) {
+  const sz = renderer.getSize(new THREE.Vector2());
+  const db = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const c = renderer.domElement;
+  const rows = [...post.targets()];
+  scene.traverse((o) => o.isReflector && rows.push([`reflector:${o.name || 'unnamed'}`, o.getRenderTarget()]));
+  const lines = [
+    `[garage:sizes] ${label}`,
+    `  window ${innerWidth}x${innerHeight} | devicePixelRatio ${devicePixelRatio} | renderer.getPixelRatio() ${renderer.getPixelRatio()}`,
+    `  renderer.getSize() ${sz.x}x${sz.y} | drawing buffer ${db.x}x${db.y} | canvas attr ${c.width}x${c.height} | canvas css ${c.clientWidth}x${c.clientHeight}`,
+    ...(rows.length
+      ? rows.map(([n, rt]) => `  target ${n.padEnd(22)} ${rt.width}x${rt.height}${rt.samples ? ` (MSAA x${rt.samples})` : ''}`)
+      : ['  (no extra render targets)']),
+    `  flags ${JSON.stringify(FLAGS)} | quality ${QUALITY.low ? 'low' : 'high'}`,
+  ];
+  console.info(lines.join('\n'));
+}
+if (FLAGS.debug) logSizes('startup');
 
 const player = createPlayer(camera, renderer.domElement, { touch: QUALITY.touch });
 const interaction = createInteraction({ scene, camera, controls: player.controls });
@@ -137,6 +157,7 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   post.setSize(innerWidth, innerHeight);
   scene.traverse((o) => o.userData.resize?.()); // reflections follow the canvas size
+  if (FLAGS.debug) logSizes(`after resize to ${innerWidth}x${innerHeight}`);
 });
 
 // Triangles in the visible scene (one pass; the floor reflection renders it a second time).
