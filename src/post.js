@@ -3,6 +3,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FLAGS } from './quality.js';
 
 // Look controls (tweak here). ACES filmic tone mapping is always on.
 //  exposure       lower = darker/less blown-out highlights on the white paint (was 1.0)
@@ -11,26 +13,132 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 //  bloomThreshold HDR luminance a pixel needs before it glows. Neon strips are ~1.0-2.5 in HDR, white paint under a light is
 //                 ~0.5-1.0 after exposure, so 1.0 lets only the strips bloom. Going below 1.0 makes the paint glow too, and
 //                 going much above it starts to kill the magenta strips (their luminance is only just over 1).
-export const POST = { exposure: 0.8, bloomStrength: 0.4, bloomRadius: 0.5, bloomThreshold: 1.0 };
+//  vignette       corner darkening, 0 = off, ~0.3 = subtle. (Applied after tone mapping, so it never changes what blooms.)
+//  vignetteStart  distance from the center (0 = center, 1 = corner) where the darkening begins
+//  grain          film grain amplitude, 0 = off, ~0.03 = subtle. Animated, and strongest in the midtones.
+export const POST = { exposure: 0.8, bloomStrength: 0.4, bloomRadius: 0.5, bloomThreshold: 1.0, vignette: 0.3, vignetteStart: 0.42, grain: 0.03 };
+
+// Runs on the HDR scene right before bloom so one bad pixel can never reach the blur chain (bloom's mip chain would spread a NaN or a
+// huge value over blocks of the screen). Non-finite pixels become black (or bright magenta with ?nan=1, to show where they were);
+// everything else is clamped to [0, 10], well above anything the scene legitimately produces (neon ~2.5, bulbs ~2) and far below the
+// half-float limit (65504).
+const SanitizeShader = {
+  name: 'SanitizeShader',
+  uniforms: { tDiffuse: { value: null }, uShow: { value: 0 } },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uShow;
+    varying vec2 vUv;
+    bool bad( float x ) {
+      // isnan/isinf can be optimized away by some drivers, so also test the magnitude the portable way: NaN fails every comparison.
+      return isnan( x ) || isinf( x ) || !( abs( x ) < 60000.0 );
+    }
+    void main() {
+      vec4 c = texture2D( tDiffuse, vUv );
+      if ( bad( c.r ) || bad( c.g ) || bad( c.b ) || bad( c.a ) ) {
+        gl_FragColor = vec4( uShow > 0.5 ? vec3( 4.0, 0.0, 4.0 ) : vec3( 0.0 ), 1.0 );
+        return;
+      }
+      gl_FragColor = vec4( clamp( c.rgb, 0.0, 10.0 ), 1.0 );
+    }`,
+};
+
+// Final pass, after OutputPass (so it works on display-ready sRGB color): vignette + film grain.
+const FinishShader = {
+  name: 'FinishShader',
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uVignette: { value: POST.vignette },
+    uVignetteStart: { value: POST.vignetteStart },
+    uGrain: { value: POST.grain },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uVignette;
+    uniform float uVignetteStart;
+    uniform float uGrain;
+    varying vec2 vUv;
+    float hash( vec2 p ) {
+      vec3 p3 = fract( vec3( p.xyx ) * 0.1031 );
+      p3 += dot( p3, p3.yzx + 33.33 );
+      return fract( ( p3.x + p3.y ) * p3.z );
+    }
+    void main() {
+      vec3 col = texture2D( tDiffuse, vUv ).rgb;
+      // vignette: radial, aspect-corrected so it is round
+      vec2 c = vUv - 0.5;
+      float d = length( c * vec2( 1.0, 0.82 ) ) * 1.6;
+      col *= 1.0 - uVignette * smoothstep( uVignetteStart, 1.0, d );
+      // grain: fresh noise each frame, strongest in the midtones, weak in pure black and pure white
+      float n = hash( gl_FragCoord.xy + fract( uTime ) * 311.0 ) - 0.5;
+      float luma = dot( col, vec3( 0.299, 0.587, 0.114 ) );
+      col += n * uGrain * ( 0.35 + 1.3 * ( 1.0 - abs( luma * 2.0 - 1.0 ) ) );
+      gl_FragColor = vec4( clamp( col, 0.0, 1.0 ), 1.0 ); // grain can push a dark pixel slightly negative; the output is display-range anyway
+    }`,
+};
 
 // Scene -> bloom (only HDR-bright pixels: neon strips, bulbs, highlights) -> tone map + sRGB.
 // `samples`: MSAA samples for the HDR render target (0 = off); the canvas's own antialiasing doesn't apply to it.
-export function createPost(renderer, scene, camera, { samples = 0 } = {}) {
+// `enabled: false` skips the composer entirely (plain renderer.render to the canvas, tone mapping still applied by the renderer);
+// `bloom: false` keeps the composer but leaves the bloom pass out. Both exist for bisecting rendering problems (see FLAGS in quality.js).
+export function createPost(renderer, scene, camera, { samples = 0, enabled = true, bloom: useBloom = true } = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = POST.exposure;
+
+  if (!enabled) {
+    return {
+      render: () => renderer.render(scene, camera),
+      setSize() {},
+      targets: () => [],
+    };
+  }
 
   const target = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), POST.bloomStrength, POST.bloomRadius, POST.bloomThreshold);
-  composer.addPass(bloom);
+  if (!FLAGS.sanitizeOff) {
+    const sanitize = new ShaderPass(SanitizeShader);
+    sanitize.uniforms.uShow.value = FLAGS.nan ? 1 : 0;
+    composer.addPass(sanitize);
+  }
+  const bloom = useBloom ? new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), POST.bloomStrength, POST.bloomRadius, POST.bloomThreshold) : null;
+  if (bloom) composer.addPass(bloom);
   composer.addPass(new OutputPass());
+  const finish = new ShaderPass(FinishShader);
+  composer.addPass(finish);
 
   return {
-    render: () => composer.render(),
+    render: () => {
+      finish.uniforms.uTime.value = performance.now() / 1000;
+      composer.render();
+    },
     setSize(w, h) {
       composer.setPixelRatio(renderer.getPixelRatio());
       composer.setSize(w, h);
+    },
+    // Every render target the composer owns, for ?debug=1.
+    targets() {
+      const t = [['composer.rt1', composer.renderTarget1], ['composer.rt2', composer.renderTarget2]];
+      if (bloom) {
+        t.push(['bloom.bright', bloom.renderTargetBright]);
+        bloom.renderTargetsHorizontal.forEach((r, i) => t.push([`bloom.h${i}`, r]));
+        bloom.renderTargetsVertical.forEach((r, i) => t.push([`bloom.v${i}`, r]));
+      }
+      return t;
     },
   };
 }

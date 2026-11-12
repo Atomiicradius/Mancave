@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { addBox, getColliders, ROOM, BAY } from '../room.js';
+import { reflectionSize } from '../quality.js';
 
 // ---- Car paint (tweak here; applies to every car in src/cars.js) -------------------------------------------------
 export const CAR = {
@@ -24,12 +25,12 @@ export const PLATFORM = {
   bevel: 0.025, // edge rounding
   body: 0x0b0a12, // side/body color
   topTint: 0x2c2c3a, // mirror tint on the top: darker = fainter car reflection (overlay-blends the reflection with this color)
-  reflectionScale: 0.4, // resolution of the car reflection in the top surface (relative to 1024x768); 0 = no reflection pass
+  reflectionScale: 0.5, // resolution of the car reflection in the top surface (relative to the canvas); 0 = no reflection pass
   stripCyan: 1.7, // emissive strength of the long-side strips (bloom threshold is ~1.0, so >1 just starts to glow)
   stripMagenta: 2.2, // emissive strength of the short-side strips (magenta has lower luminance, so it needs a bit more)
   gridOpacity: 0.4, // inset grid / brackets on the top surface
-  glowOpacity: 0.3, // soft glow decal on the floor around the platform
-  glowSpread: 1.2, // meters the floor glow fades out over
+  glowOpacity: 0.22, // soft glow decal on the floor around the platform
+  glowSpread: 0.8, // meters the floor glow fades out over
 };
 
 const hdr = (hex, k) => new THREE.Color(hex).multiplyScalar(k); // color pushed above 1.0 so the bloom pass picks it up
@@ -181,14 +182,18 @@ function buildFloorHatch(parent, reflectionScale) {
     geo.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
     const mirror = new Reflector(geo, {
       color: PLATFORM.topTint,
-      textureWidth: Math.round(1024 * reflectionScale),
-      textureHeight: Math.round(768 * reflectionScale),
+      textureWidth: reflectionSize(reflectionScale)[0],
+      textureHeight: reflectionSize(reflectionScale)[1],
       clipBias: 0.003,
     });
     mirror.rotation.x = -Math.PI / 2;
     mirror.position.y = h + 0.0006;
     mirror.frustumCulled = false; // its vertices move; the static bounding sphere would be wrong
     mirror.name = 'platform-top';
+    mirror.userData.resize = () => {
+      const [rw, rh] = reflectionSize(reflectionScale);
+      mirror.getRenderTarget().setSize(rw, rh);
+    };
     parent.add(mirror);
   }
 

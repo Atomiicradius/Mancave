@@ -14,6 +14,7 @@
     #overlay.loading #help { display: none; }
     #overlay:not(.loading) #loadbar { display: none; }
     #overlay p { padding: 0 24px; }
+    #quality-toggle { margin-top: 6px; background: none; border: 1px solid rgba(155,92,255,.6); border-radius: 4px; color: #e8dcff; padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
     #credits-link, #credits-close { margin-top: 10px; background: none; border: 0; color: #e8dcff; opacity: .6; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
     #credits { position: absolute; inset: 0; overflow: auto; padding: 28px 22px; box-sizing: border-box; background: rgba(5,3,10,.96); text-align: left; cursor: default; }
     #credits[hidden] { display: none; }
@@ -82,6 +83,7 @@
     <div id="loadbar"><i></i></div>
     <p id="startmsg">Loading… 0%</p>
     <p id="help">WASD move · Mouse look · Esc release</p>
+    <button type="button" id="quality-toggle"></button>
     <button type="button" id="credits-link">Credits &amp; licences</button>
     <div id="credits" hidden></div>
   </div>
